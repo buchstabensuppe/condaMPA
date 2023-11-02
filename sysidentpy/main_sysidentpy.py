@@ -1,9 +1,11 @@
 import sysidentpy as syp
 import numpy as np
 import pandas
+import CSTRsysident
+from CSTRsysident import simCSTR1 as sim
 import matplotlib.pyplot as plt
-#from sysidentpy.model_structure_selection import FROLS
-from sysidentpy.basis_function._basis_function import Polynomial
+from sysidentpy.model_structure_selection import FROLS
+from sysidentpy.basis_function import Polynomial
 from sysidentpy.metrics import root_relative_squared_error
 from sysidentpy.utils.generate_data import get_siso_data
 from sysidentpy.utils.display_results import results
