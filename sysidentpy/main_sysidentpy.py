@@ -14,11 +14,17 @@ from sysidentpy.residues.residues_correlation import (
     compute_residues_autocorrelation,
     compute_cross_correlation,
 )
+
+
+#Daten erzeugen
+
 seconds =int(5)
 tstep = 0.001 #[s]
 n_variables = 3
 x0s = [100, 50, 0]
 data = sim(seconds, tstep, n_variables, x0s)
+
+#Anwendung Sysidentpy
 
 narmax =    PolynomialNarmax(
     non_degree=2,  # The nonlinearity degree
