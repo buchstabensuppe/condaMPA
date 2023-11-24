@@ -1,3 +1,5 @@
+#source: https://pysindy.readthedocs.io/en/latest/examples/12_weakform_SINDy_examples/example.html#Test-weak-form-ODE-functionality-on-Lorenz-equation
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import solve_ivp
@@ -39,7 +41,7 @@ integrator_keywords["atol"] = 1e-12
 # ).y.T
 #CSTR Simulation aufrufen und Simulationsdaten importeren
 
-seconds =int(5) #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
+seconds =5 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
 dt = 0.001 #[s]
 n_variables = 3
 x0s = [100, 50, 10]
@@ -79,16 +81,25 @@ model = ps.SINDy(feature_library=ode_lib, optimizer=optimizer)
 model.fit(u_train)
 model.print()
 
+# das errechnete Modell plotten:
+#u_weak = model.simulate(x0s, t_train)
+#plt.plot(t_train, u_weak[:,1], "b", label=r"$q$ weak form prediction")
+
+# Plot läuft nicht, Rest schon, @Alex kannst du den Plot reparieren?
 
 ##### #3 on website, used here in the attempt to learn how to extract the ODEs out of the model
+# Fazit: Hilft mir gar nicht mit der Frage, läuft aber butterweich. einzig unklar, was ich jetzt
+# damit anfange, @Alex fragen ob auch ganz andere Differentialgleichungen okay sind, solange sie funktionieren
 
 # Generate measurement data
 # dt = 0.001
 # t_train = np.arange(0, 10, dt)
 # t_train_span = (t_train[0], t_train[-1])
 # u0_train = [-8, 8, 27]
-u0_test = [110, 55, 0]
+u0_test = [100, 50, 0]
 u_train = simCSTR1(seconds, dt, n_variables, u0_test)
+t_train = np.arange(0, seconds, dt)
+t_train_span = (t_train[0], t_train[-1])
 # u_train = solve_ivp(
 #     lorenz, t_train_span, u0_train, t_eval=t_train, **integrator_keywords
 # ).y.T
@@ -108,7 +119,7 @@ library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y]
 library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y]
 
 # Scan over the number of integration points and the number of subdomains
-n = 10
+n = 20
 errs = np.zeros((n))
 K_scan = np.linspace(20, 10000, n, dtype=int)
 for i, K in enumerate(K_scan):
@@ -120,12 +131,19 @@ for i, K in enumerate(K_scan):
         is_uniform=True,
         K=K,
     )
-    opt = optimizer
+    #opt = optimizer
+    opt = ps.SR3(
+        threshold=0.1,
+        thresholder="l0",
+        max_iter=1000000,
+        normalize_columns=True,
+        tol=1e-9,
+    )
     u_dot_train_integral = ode_lib.convert_u_dot_integral(u_train)
 
     # Instantiate and fit the SINDy model with the integral of u_dot
     model = ps.SINDy(feature_library=ode_lib, optimizer=opt)
-    model.fit(u_train, quiet=True)
+    model.fit(u_train)
     errs[i] = np.sqrt(
         (
             np.sum((u_dot_train_integral - opt.Theta_ @ opt.coef_.T) ** 2)
@@ -133,11 +151,12 @@ for i, K in enumerate(K_scan):
         )
         / u_dot_train_integral.shape[0]
     )
+    print('final model', i, 'shown in plot:')
+    model.print()
 
 # printing model and plot to show convergence
 
-print('final model shown in plot:')
-model.print()
+
 
 plt.title("Convergence of weak SINDy, hyperparameter scan", fontsize=12)
 plt.plot(K_scan, errs)
