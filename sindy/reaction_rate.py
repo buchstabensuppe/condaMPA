@@ -9,7 +9,8 @@ import jax.numpy as np
 import jax
 from Parameter_PDE_CH4 import data
 
-@jax.jit
+
+
 def reaction_rate(T, x, p):
     # Reaction Kinetics data
     # Reference Temperature in Kelvin

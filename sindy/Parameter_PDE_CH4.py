@@ -3,7 +3,7 @@ Solving Partial-Differential Equation 1D-PFTR for Methanantion
 Author: Luisa Peterson
 """
 
-import jax.numpy as np
+import numpy as np
 
 # Define the data dictionary with default values
 data = {
