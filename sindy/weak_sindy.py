@@ -81,9 +81,12 @@ model = ps.SINDy(feature_library=ode_lib, optimizer=optimizer)
 model.fit(u_train)
 model.print()
 
+
+t_span = np.linspace(0, 5, 100)
+
 # das errechnete Modell plotten:
-#u_weak = model.simulate(x0s, t_train)
-#plt.plot(t_train, u_weak[:,1], "b", label=r"$q$ weak form prediction")
+u_weak = model.predict(x0s, t_span)
+plt.plot(t_train, u_weak[:,1], "b", label=r"$q$ weak form prediction")
 
 # Plot läuft nicht, Rest schon, @Alex kannst du den Plot reparieren?
 
@@ -97,14 +100,18 @@ model.print()
 # t_train_span = (t_train[0], t_train[-1])
 # u0_train = [-8, 8, 27]
 u0_test = [100, 50, 0]
-u_train = simCSTR1(seconds, dt, n_variables, u0_test)
+data = simCSTR1(seconds, dt, n_variables, u0_test)
 t_train = np.arange(0, seconds, dt)
 t_train_span = (t_train[0], t_train[-1])
+# u_test = #20 rand percent of data
+# u_train = #other 80 persent of data
+
+
 # u_train = solve_ivp(
 #     lorenz, t_train_span, u0_train, t_eval=t_train, **integrator_keywords
 # ).y.T
-u_test = solve_ivp(
-    lorenz, t_train_span, u0_test, t_eval=t_train, **integrator_keywords).y.T
+#u_test = solve_ivp(
+#    lorenz, t_train_span, u0_test, t_eval=t_train, **integrator_keywords).y.T
 
 rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
 u_dot_clean = ps.FiniteDifference()._differentiate(u_test, t=dt)
