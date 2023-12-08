@@ -85,8 +85,8 @@ model.print()
 t_span = np.linspace(0, 5, 100)
 
 # das errechnete Modell plotten:
-u_weak = model.predict(x0s, t_span)
-plt.plot(t_train, u_weak[:,1], "b", label=r"$q$ weak form prediction")
+#u_weak = model.predict(x0s, t_span)
+#plt.plot(t_train, u_weak[:,1], "b", label=r"$q$ weak form prediction")
 
 # Plot läuft nicht, Rest schon, @Alex kannst du den Plot reparieren?
 
@@ -106,6 +106,14 @@ t_train_span = (t_train[0], t_train[-1])
 # u_test = #20 rand percent of data
 # u_train = #other 80 persent of data
 
+##### splitting simulated data randomly for test and training (20/80)
+##### not used, as weak sindy expects test and training data of same size
+# from sklearn.model_selection import train_test_split
+# x_train, x_test = train_test_split(data, test_size=0.2)
+# print(x_train, x_test)
+#
+# u_test = x_test
+# u_train = x_train
 
 # u_train = solve_ivp(
 #     lorenz, t_train_span, u0_train, t_eval=t_train, **integrator_keywords
@@ -113,12 +121,15 @@ t_train_span = (t_train[0], t_train[-1])
 #u_test = solve_ivp(
 #    lorenz, t_train_span, u0_test, t_eval=t_train, **integrator_keywords).y.T
 
+u_test = u_train
+
 rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
 u_dot_clean = ps.FiniteDifference()._differentiate(u_test, t=dt)
 u_clean = u_test
-u_train = u_train + np.random.normal(0, rmse / 5.0, u_train.shape)  # Add 20% noise
+u_train = u_train + np.random.normal(0, rmse / 20.0, u_train.shape)  # Add 20% noise
+print('u_train with noise:', u_train)
 rmse = mean_squared_error(u_test, np.zeros(u_test.shape), squared=False)
-u_test = u_test + np.random.normal(0, rmse / 5.0, u_test.shape)  # Add 20% noise
+u_test = u_test + np.random.normal(0, rmse / 20.0, u_test.shape)  # Add 20% noise
 u_dot = ps.FiniteDifference()._differentiate(u_test, t=dt)
 
 # Same library terms as before
@@ -170,3 +181,5 @@ plt.plot(K_scan, errs)
 plt.xlabel("Number of subdomains", fontsize=16)
 plt.ylabel("Error", fontsize=16)
 plt.show()
+
+
