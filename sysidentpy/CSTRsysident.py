@@ -6,6 +6,12 @@
 # db/dt = k2 * c - k1 * a * b                   = 0.002 * c - 0.008 * a * b
 # dc/dt = 2 * k1 * a * b - 2 * k2 * c           = 0.016 * a * b - 0.004 * c
 
+#Gleichungen umgewandelt in diskretes System:
+#a[n+1] = a[n] + (k2 * c[n] - k1 * a[n] * b[n]) * dt
+#b[n+1] = b[n] + (k2 * c[n] - k1 * a[n] * b[n]) * dt
+#c[n+1] = c[n] + (2 * k1 * a[n] * b[n] - 2 * k2 * c[n]) * dt
+
+
 import numpy
 
 #settings
