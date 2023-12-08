@@ -13,13 +13,13 @@
 #c[n+1] = c[n] + (2 * k1 * a[n] * b[n] - 2 * k2 * c[n]) * dt
 
 import numpy
-
+import copy
 #settings
 
 def simCSTR1(seconds, tstep, n_variables, x0s):
         steps = int(seconds/tstep)
         data = numpy.zeros((steps, n_variables),dtype=float)
-        ydata = numpy.zeros((steps, n_variables),dtype=float)
+        ydata = numpy.copy(data)
         t_0 = 0
         k1 = 0.008
         k2 = 0.002
@@ -44,9 +44,9 @@ def simCSTR1(seconds, tstep, n_variables, x0s):
 
         ## veränderter cstr
         for i in range(steps):
-                adt = 0.002 * c - 0.008 * a * b
-                bdt = 0.002 * c - 0.008 * a * b
-                cdt = 0.016 * a * b - 0.004 * c
+                # adt = 0.002 * c - 0.008 * a * b
+                # bdt = 0.002 * c - 0.008 * a * b
+                # cdt = 0.016 * a * b - 0.004 * c
                 data[i] = (a, b, c)
                 ydata[i] = (adt, bdt, cdt)
                 a_i = a + (k2 * c - k1 * a * b) * tstep
@@ -55,9 +55,14 @@ def simCSTR1(seconds, tstep, n_variables, x0s):
                 a = a_i
                 b = b_i
                 c = c_i
+                adt = 0.002 * c - 0.008 * a * b
+                bdt = 0.002 * c - 0.008 * a * b
+                cdt = 0.016 * a * b - 0.004 * c
 
 
         print(data)
         print(ydata)
 
         return data, ydata
+
+breakbreak = True
