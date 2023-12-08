@@ -26,7 +26,7 @@ data = sim(seconds, tstep, n_variables, x0s)
 
 #Anwendung Sysidentpy
 
-narmax =    PolynomialNarmax(
+narmax = PolynomialNarmax(
     non_degree=2,  # The nonlinearity degree
     order_selection=True,  # Use order selection
     n_info_values=10,  # Number of information criteria to consider
