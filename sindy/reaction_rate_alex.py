@@ -10,7 +10,6 @@ import jax
 from Parameter_PDE_CH4 import data
 
 
-
 def reaction_rate(T, x, p):
     # Reaction Kinetics data
     # Reference Temperature in Kelvin
@@ -50,10 +49,14 @@ def reaction_rate(T, x, p):
     # partial pressures [Pa]
     p_i = x*p
     # unpack partial pressures
-    p_H2 = p_i[0, :]
-    p_CO2 = p_i[1, :]
-    p_CH4 = p_i[2, :]
-    p_H2O = p_i[3, :]
+    # p_H2 = p_i[0, :]
+    # p_CO2 = p_i[1, :]
+    # p_CH4 = p_i[2, :]
+    # p_H2O = p_i[3, :]
+    p_H2 = p_i[0]
+    p_CO2 = p_i[1]
+    p_CH4 = p_i[2]
+    p_H2O = p_i[3]
 
     # equation
     r_NUM = k*p_H2**0.5*p_CO2**0.5*(1-(p_CH4*p_H2O**2)/(p_CO2*p_H2**4*Keq))
