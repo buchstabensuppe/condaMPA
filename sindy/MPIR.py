@@ -25,7 +25,7 @@ p = {
 
     # Inlet Concentrations
     'cain': 10,
-    'cbin': 0,
+    'cbin': 2.5,
     'ccin': 0,
     'cdin': 0,
 
@@ -64,7 +64,7 @@ p = {
 }
 
 # Vector of Initial Concentrations
-p['cin']  =  np.array([p['cain'],p['cbin'],p['ccin'],p['cdin']])
+p['cin']  =  data['x_in'] * data['p_R'] / (data['R'] * data['T_gas_in'])
 
 ############### Temperatur in bereitgestellten Daten konstant?
 
@@ -74,8 +74,9 @@ p['cin']  =  np.array([p['cain'],p['cbin'],p['ccin'],p['cdin']])
 #     return k
 
 
+
 # ODE-System
-def ode_system(x, c, p):
+def ode_system(t, c, p):
 
     update_dependent_values()
     # Unpacking the Concentrations
@@ -84,26 +85,22 @@ def ode_system(x, c, p):
     cc = np.array(c[2])
     cd = np.array(c[3])
 
-    x =np.array([0,0,0,0])
+    x =np.array([0.0, 0.0, 0.0 ,0.0])
     ######## @Alex not so sure if this is fine, but need x somehow
 
     sum_c = c[0] + c[1] + c[2] + c[3]
-    if ca != 0:
-        x[0] = sum_c/ca
-    #else:
-    #    x0 = 0
-    if cb != 0:
-        x[1] = sum_c/cb
-    #else:
-    #    x1 = 0
-    if cc != 0:
-        x[2] = sum_c/cc
-    #else:
-    #    x2 = 0
-    if cd != 0:
-        x[3] = sum_c/cd
-    #else:
-    #    x3 = 0
+
+    for i in range(4):
+        if c[i] <= 0:
+            c[i] = 0
+
+    x[0] = ca/sum_c
+
+    x[1] = cb/sum_c
+
+    x[2] = cc/sum_c
+
+    x[3] = cd/sum_c
 
     # Calculation of the rate constant
     #k1 = arrhenius(p['k01'], p['ea1'], p)
@@ -111,6 +108,7 @@ def ode_system(x, c, p):
     #k3 = arrhenius(p['k03'], p['ea3'], p)
 
     # Calculation of the rates
+    c_in = data['x_in'] * data['p_R'] / (data['R'] * data['T_gas_in'])
 
     r = np.copy(reaction_rate(p['temp'], x, 2E5))
 
@@ -128,7 +126,7 @@ def ode_system(x, c, p):
     #tau = data['V_r']*data['F_in']
     V_r = 2 / 4 * np.pi * 0.01 ** 2
     tau = V_r * (6 * 1e-3 / 60 * (1.013E5 / 2E5) * (270+273.15 / 273.15))
-    print(tau)
+    #print(tau)
     ########## cin fehlt, muss also berechnet werden aus Paramter Funktion ->
     #           ci = xi * summe(c)
     #           ci = ni/V
@@ -144,7 +142,7 @@ def ode_system(x, c, p):
     # for i in range(4):
     #     c_in[i] = n_in[i]*V_r
 
-    c_in = n_in_total * x_in
+    #c_in = n_in_total * x_in
 
     #dc_i / dt = (1 / tau)(c_i_in - ci) + nu_i * rho * r
     # dcadt = (1 / tau)(c_in[0] - ca) + p['nu_a'] * p['rho'] * r
@@ -154,17 +152,17 @@ def ode_system(x, c, p):
     # soll nu ein ny sein?
     ny = np.array([-1, -4, 2, 2])
 
-    print('tau:', tau)
-    print('c_in(0)', c_in[0])
-    print('ca:', ca)
-    print('ny(0):', ny[0])
-    print('r:', r)
+    # print('tau:', tau)
+    # print('c_in(0)', c_in[0])
+    # print('ca:', ca)
+    # print('ny(0):', ny[0])
+    # print('r:', r)
 
-
-    dcadz = (1 / tau)(c_in[0] - ca) + ny[0] * 1032 * r
-    dcbdz = (1 / tau)(c_in[1] - cb) + ny[1] * 1032 * r
-    dccdz = (1 / tau)(c_in[2] - cc) + ny[2] * 1032 * r #data['rho_cat'] * r
-    dcddz = (1 / tau)(c_in[3] - cd) + ny[3] * 1032 * r
+    tau = 1000
+    dcadz = (1 / tau)*(c_in[0] - ca) + ny[0] * 1032 * r
+    dcbdz = (1 / tau)*(c_in[1] - cb) + ny[1] * 1032 * r
+    dccdz = (1 / tau)*(c_in[2] - cc) + ny[2] * 1032 * r #data['rho_cat'] * r
+    dcddz = (1 / tau)*(c_in[3] - cd) + ny[3] * 1032 * r
 
 
     #               CO2 + 4H2 -> 2CH4 + 2H2O
@@ -186,11 +184,11 @@ def ode_system(x, c, p):
 zspan = (0, data['L_R'])
 
 # Define lambda-function
-func = lambda z,c : ode_system(z,c,p)
+func = lambda t,c : ode_system(t,c,p)
 
 
 # Solving the ODE-System for Initial Conditions
-sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45',t_eval=np.linspace(0, data['L_R'], 100))
+sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45')#,t_eval=np.linspace(0, data['L_R'], 10))
 
 # Unpacking the Trajectories of the Concentrations
 ca = sol.y[0,:]
@@ -201,6 +199,7 @@ cd = sol.y[3,:]
 # Plotting the Result
 fig, ax = plt.subplots()
 ax.plot(sol.t,ca,sol.t,cb,sol.t,cc,sol.t,cd)
-ax.set_xlabel('Reactor coordinate z in m')
+ax.set_xlabel('zeit in sekunden und so')
 ax.set_ylabel('Concentration c in mol/m^3')
 ax.legend(['A','B','C','D'])
+plt.show()
