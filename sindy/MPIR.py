@@ -60,6 +60,11 @@ p = {
     # 'nu_d':
     # 'rho':
 
+    #seconds of simulation:
+    'seconds': 1,
+    'L_r': 2,
+    "D_r": 0.01,  # Inner diameter reactor in m
+
 
 }
 
@@ -110,7 +115,7 @@ def ode_system(t, c, p):
     # Calculation of the rates
     c_in = data['x_in'] * data['p_R'] / (data['R'] * data['T_gas_in'])
 
-    r = np.copy(reaction_rate(p['temp'], x, 2E5))
+    r = reaction_rate(p['T_gas_in'], x, 2E5)
 
     #r1 = k1 * np.power(ca, p['n1'])
     #r2 = k2 * np.power(cb, p['n2'])
@@ -126,6 +131,14 @@ def ode_system(t, c, p):
     #tau = data['V_r']*data['F_in']
     V_r = 2 / 4 * np.pi * 0.01 ** 2
     tau = V_r * (6 * 1e-3 / 60 * (1.013E5 / 2E5) * (270+273.15 / 273.15))
+    #tau = Volumen / Volumenstrom = Querschnitt * Länge / Volumenstrom
+    #Volumen:
+    #V_r = data["L_R"](2m) / 4 * np.pi * data["D_R"](0.01) ** 2
+    V_r = p['L_r'] / 4 * np.pi * p['D_r'] ** 2;
+    #Volumenstrom:
+    F_in = (data["F_in_Nl_min"] * data["L_to_m3"] / data["min_to_s"]
+                    * (1.013E5 / data["p_R"]) * (data["T_gas_in"] / 273.15))
+    tau =V_r/F_in
     #print(tau)
     ########## cin fehlt, muss also berechnet werden aus Paramter Funktion ->
     #           ci = xi * summe(c)
@@ -158,12 +171,11 @@ def ode_system(t, c, p):
     # print('ny(0):', ny[0])
     # print('r:', r)
 
-    tau = 0.2
+    #tau = 0.2
     dcadz = (1 / tau)*(c_in[0] - ca) + ny[0] * 1032 * r
     dcbdz = (1 / tau)*(c_in[1] - cb) + ny[1] * 1032 * r
     dccdz = (1 / tau)*(c_in[2] - cc) + ny[2] * 1032 * r #data['rho_cat'] * r
     dcddz = (1 / tau)*(c_in[3] - cd) + ny[3] * 1032 * r
-
 
     #               CO2 + 4H2 -> 2CH4 + 2H2O
 
@@ -181,14 +193,15 @@ def ode_system(t, c, p):
 
 
 # Integration area
-zspan = (0, data['L_R'])
+zspan = (0, p['seconds'])
 
 # Define lambda-function
 func = lambda t,c : ode_system(t,c,p)
 
 
 # Solving the ODE-System for Initial Conditions
-sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45')#,t_eval=np.linspace(0, data['L_R'], 10))
+#sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45')#,t_eval=np.linspace(0, data['L_R'], 10))
+sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45',t_eval=np.linspace(0, p['seconds'], 10000))
 
 
 # Unpacking the Trajectories of the Concentrations
@@ -202,5 +215,7 @@ fig, ax = plt.subplots()
 ax.plot(sol.t,ca,sol.t,cb,sol.t,cc,sol.t,cd)
 ax.set_xlabel('zeit in sekunden und so')
 ax.set_ylabel('Concentration c in mol/m^3')
-ax.legend(['A','B','C','D'])
+ax.legend(['H2','CO2','CH4','H2O'])
 plt.show()
+
+breakbreak = True
