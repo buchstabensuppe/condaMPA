@@ -158,7 +158,7 @@ def ode_system(t, c, p):
     # print('ny(0):', ny[0])
     # print('r:', r)
 
-    tau = 1000
+    tau = 0.2
     dcadz = (1 / tau)*(c_in[0] - ca) + ny[0] * 1032 * r
     dcbdz = (1 / tau)*(c_in[1] - cb) + ny[1] * 1032 * r
     dccdz = (1 / tau)*(c_in[2] - cc) + ny[2] * 1032 * r #data['rho_cat'] * r
@@ -189,6 +189,7 @@ func = lambda t,c : ode_system(t,c,p)
 
 # Solving the ODE-System for Initial Conditions
 sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45')#,t_eval=np.linspace(0, data['L_R'], 10))
+
 
 # Unpacking the Trajectories of the Concentrations
 ca = sol.y[0,:]
