@@ -23,47 +23,47 @@ from Parameter_PDE_CH4 import data, update_dependent_values
 # Dictionary of Parameters
 p = {
 
-    # Inlet Concentrations
-    'cain': 10,
-    'cbin': 2.5,
-    'ccin': 0,
-    'cdin': 0,
+# Inlet Concentrations
+'cain': 10,
+'cbin': 2.5,
+'ccin': 0,
+'cdin': 0,
 
-    # Frequency Factors
-    'k01': 5.4e10,
-    'k02': 4.6e17,
-    'k03': 5.0e7,
+# Frequency Factors
+'k01': 5.4e10,
+'k02': 4.6e17,
+'k03': 5.0e7,
 
-    # Activation Energies
-    'ea1': 7.5e4,
-    'ea2': 1.2e5,
-    'ea3': 5.5e4,
+# Activation Energies
+'ea1': 7.5e4,
+'ea2': 1.2e5,
+'ea3': 5.5e4,
 
-    # Exponents
-    'n1': 1.1,
-    'n2': 1,
-    'n3': 1,
+# Exponents
+'n1': 1.1,
+'n2': 1,
+'n3': 1,
 
-    # Gasconstant, Temperature, Cross Section, Length
-    'r': 8.3145,
-    'temp': 330,
-    'a': 0.1,
-    'q': 0.1,
-    'l': 50,
-    'p_R': 2E5,
-    'R': 8.3145,
-    'T_gas_in': 270+273.15,
-    # added
-    # 'nu_a':
-    # 'nu_b':
-    # 'nu_c':
-    # 'nu_d':
-    # 'rho':
+# Gasconstant, Temperature, Cross Section, Length
+'r': 8.3145,
+'temp': 330,
+'a': 0.1,
+'q': 0.1,
+'l': 50,
+'p_R': 2E5,
+'R': 8.3145,
+'T_gas_in': 270+273.15,
+# added
+# 'nu_a':
+# 'nu_b':
+# 'nu_c':
+# 'nu_d':
+# 'rho':
 
-    #seconds of simulation:
-    'seconds': 1,
-    'L_r': 2,
-    "D_r": 0.01,  # Inner diameter reactor in m
+#seconds of simulation:
+'seconds': 1,
+'L_r': 2,
+"D_r": 0.01,  # Inner diameter reactor in m
 
 
 }
@@ -201,7 +201,7 @@ func = lambda t,c : ode_system(t,c,p)
 
 # Solving the ODE-System for Initial Conditions
 #sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45')#,t_eval=np.linspace(0, data['L_R'], 10))
-sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45',t_eval=np.linspace(0, p['seconds'], 10000))
+sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45',t_eval=np.linspace(0, p['seconds'], 1000))
 
 
 # Unpacking the Trajectories of the Concentrations
@@ -219,3 +219,5 @@ ax.legend(['H2','CO2','CH4','H2O'])
 plt.show()
 
 breakbreak = True
+
+c = [ca,cb,cc,cd]
