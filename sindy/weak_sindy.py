@@ -47,7 +47,7 @@ dt = 0.001 #[s]
 dt_time_seconds = int(seconds/dt)
 
 # Simulation auswählen: basic batch reactor = 1, MPI CSTR = 2
-reactor_choice = 2
+reactor_choice = 1
 if reactor_choice == 1:
     n_variables = 3
     x0s = [100, 50, 10]

@@ -55,10 +55,10 @@ u_test = np.copy(u_train)
 rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
 u_dot_clean = ps.FiniteDifference()._differentiate(u_test, t=dt)
 u_clean = u_test
-u_train = u_train + np.random.normal(0, rmse / 20.0, u_train.shape)  # Add 20% noise
+u_train = u_train + np.random.normal(0, rmse / 80.0, u_train.shape)  # Add 20% noise
 print('u_train with noise:', u_train)
 rmse = mean_squared_error(u_test, np.zeros(u_test.shape), squared=False)
-u_test = u_test + np.random.normal(0, rmse / 20.0, u_test.shape)  # Add 20% noise
+u_test = u_test + np.random.normal(0, rmse / 80.0, u_test.shape)  # Add 20% noise
 u_dot = ps.FiniteDifference()._differentiate(u_test, t=dt)
 
 
@@ -95,10 +95,10 @@ u_weak = original_model.simulate(x0s, t=t_train, integrator="odeint")
 plt.figure(figsize=(16, 4))
 for i in range(3):
     plt.subplot(1, 3, i + 1)
+    plt.plot(t_train, u_train_clean[:, i], "k", label=r"$q$ without added noise")
     plt.plot(t_train, u_test[:, i], "c", label=r"$q$ with added noise")
     plt.plot(t_train, u_pred[:, i], "r", label=r"$q$ prediction")
     plt.plot(t_train, u_pred_rauschen[:, i], "b", label=r"$q$ weak form prediction")
-    plt.plot(t_train, u_train_clean[:, i], "k", label=r"$q$ without added noise")
     plt.grid(True)
     plt.ylabel(feature_names[i], fontsize=14)
     plt.xlabel("t", fontsize=14)
@@ -107,3 +107,5 @@ for i in range(3):
         plt.legend()
 
 plt.show()
+
+breakbreak = 1
