@@ -61,7 +61,7 @@ p = {
 # 'rho':
 
 #seconds of simulation:
-'seconds': 1,
+'seconds': 5,
 'L_r': 2,
 "D_r": 0.01,  # Inner diameter reactor in m
 
@@ -114,9 +114,7 @@ def ode_system(t, c, p):
     #k3 = arrhenius(p['k03'], p['ea3'], p)
 
     # Calculation of the rates
-    c_in = data['x_in'] * data['p_R'] / (data['R'] * data['T_gas_in'])
 
-    r = reaction_rate(p['T_gas_in'], x, 2E5)
 
     #r1 = k1 * np.power(ca, p['n1'])
     #r2 = k2 * np.power(cb, p['n2'])
@@ -130,25 +128,6 @@ def ode_system(t, c, p):
     ########### @Alex, breauchst du für das Volumen nicht pi? dafuq
 
     #tau = data['V_r']*data['F_in']
-    V_r = 2 / 4 * np.pi * 0.01 ** 2
-    tau = V_r * (6 * 1e-3 / 60 * (1.013E5 / 2E5) * (270+273.15 / 273.15))
-    #tau = Volumen / Volumenstrom = Querschnitt * Länge / Volumenstrom
-    #Volumen:
-    #V_r = data["L_R"](2m) / 4 * np.pi * data["D_R"](0.01) ** 2
-    V_r = p['L_r'] / 4 * np.pi * p['D_r'] ** 2;
-    #Volumenstrom:
-    F_in = (data["F_in_Nl_min"] * data["L_to_m3"] / data["min_to_s"]
-                    * (1.013E5 / data["p_R"]) * (data["T_gas_in"] / 273.15))
-    tau =V_r/F_in
-    #print(tau)
-    ########## cin fehlt, muss also berechnet werden aus Paramter Funktion ->
-    #           ci = xi * summe(c)
-    #           ci = ni/V
-    #n_in_total = (data["p_R"] * data["V_r"]
-    #                      / data["R"] / data["T_gas_in"])
-    n_in_total = (p["p_R"] * V_r / p['R'] / p['T_gas_in'])
-    x_in = np.array([0.8, 0.2, 0, 0])
-    n_in = n_in_total * x_in
 
 
     # n_in = data['n_in']
@@ -163,14 +142,7 @@ def ode_system(t, c, p):
     # dcbdt = (1 / tau)(c_in[1] - cb) + p['nu_b'] * p['rho'] * r
     # dccdt = (1 / tau)(c_in[2] - cc) + p['nu_c'] * p['rho'] * r
     # dcddt = (1 / tau)(c_in[3] - cd) + p['nu_d'] * p['rho'] * r
-    # soll nu ein ny sein?
-    ny = np.array([-1, -4, 2, 2])
 
-    # print('tau:', tau)
-    # print('c_in(0)', c_in[0])
-    # print('ca:', ca)
-    # print('ny(0):', ny[0])
-    # print('r:', r)
 
     #tau = 0.2
     # dcadz = (1 / tau)*(c_in[0] - ca) + ny[0] * 1032 * r
@@ -178,10 +150,11 @@ def ode_system(t, c, p):
     # dccdz = (1 / tau)*(c_in[2] - cc) + ny[2] * 1032 * r #data['rho_cat'] * r
     # dcddz = (1 / tau)*(c_in[3] - cd) + ny[3] * 1032 * r
 
-    x0 = ny[0]
-    x1 = ny[1]
-    x2 = ny[2]
-    x3 = ny[3]
+    x0 = c[0]
+    x1 = c[1]
+    x2 = c[2]
+    x3 = c[3]
+
 
     # weak sindy result for
     # dcadz = 1240.969 * 1 + -144.725 * x0 + -194.589 * x1 + 334.655 * x2 + 173.464 * x3 + 3.156 * x0 * x0 + -2.821 * x1 * x1 + -7.745 * x2 * x2 + 3.312 * x3 * x3 + 6.342 * x0 * x1 + -8.013 * x0 * x2 + -6.082 * x0 * x3 + -2.073 * x1 * x2 + -0.940 * x1 * x3 + -0.245 * x2 * x3
@@ -189,16 +162,44 @@ def ode_system(t, c, p):
     # dccdz = 1601.529 * 1 + -89.487 * x0 + 129.126 * x1 + 32.148 * x2 + -91.630 * x3 + 1.153 * x0 * x0 + 2.232 * x1 * x1 + -1.854 * x2 * x2 + 1.244 * x3 * x3 + -3.309 * x0 * x1 + 0.078 * x0 * x2 + 3.100 * x0 * x3 + -4.223 * x1 * x2 + -0.165 * x1 * x3 + -4.795 * x2 * x3
     # dcddz = -3495.433 * 1 + 209.507 * x0 + 72.447 * x1 + -1.508 * x2 + 5.710 * x3 + -3.087 * x0 * x0 + -2.497 * x1 * x1 + 0.263 * x2 * x2 + 2.601 * x3 * x3 + -1.108 * x0 * x1 + -0.126 * x0 * x2 + -0.821 * x0 * x3 + -2.872 * x1 * x2 + -5.129 * x1 * x3 + 0.362 * x2 * x3
 
-    dcadz = 2493.614 * 1 + -84.787 * x0 + 58.666 * x1 + -12.306 * x2 + 0.682 * x0 * x0 + 0.919 * x1 * x1 + 0.013 * x2 * x2 + -1.233 * x0 * x1 + 0.267 * x0 * x2 + -0.129 * x1 * x2
-    dcbdz = -1003.706 * 1 + 29.517 * x0 + -19.411 * x1 + 9.503 * x2 + -0.188 * x0 * x0 + -0.003 * x1 * x1 + 0.002 * x2 * x2 + 0.175 * x0 * x1 + -0.193 * x0 * x2 + 0.187 * x1 * x2
-    dccdz = -2984.342 * 1 + 93.189 * x0 + -56.606 * x1 + 21.710 * x2 + -0.645 * x0 * x0 + -0.494 * x1 * x1 + -0.004 * x2 * x2 + 0.866 * x0 * x1 + -0.472 * x0 * x2 + 0.370 * x1 * x2
-    dcddz = 0
+    # dcadz = 5280.549 * 1 + -210.992 * x0 + 205.560 * x1 + -0.624 * x2 + 2.091 *x0*x0 + 2.426 *x1*x1 + 0.001 *x2*x2 + -4.304 *x0*x1 + 0.039* x0*x2 + 0.038* x1*x2
+    # dcbdz = -2481.493 *1 + 84.814 *x0 + -71.131 *x1 + 12.729 *x2 + -0.699 *x0*x0 + -0.516 *x1*x1 + 0.001 *x2*x2 + 1.163 *x0*x1 + -0.262 *x0*x2 + 0.246 *x1*x2
+    # dccdz = -3566.194 *1 + 128.742* x0 + -111.427* x1 + 11.783 *x2 + -1.138 *x0*x0 + -1.019 *x1*x1 + -0.003 *x2*x2 + 2.059* x0*x1 + -0.254 *x0*x2 + 0.215 *x1*x2
+    # dcddz = 0
     # weak sindy result for
+    # dcadz = -24.622 * x1 * x1
+    # dcbdz = 0.196 * x2 + 0.196 * x3 + 39.675 * x1 * x1 + 23.215 * x2 * x2 + 23.215 * x3 * x3 + -4.647 * x0 * x2 + -4.647 * x0 * x3 + 23.215 * x2 * x3
+    # dccdz = 49.243 * x1 * x1
+    # dcddz = 49.243 * x1 * x1
 
-    # dcadz = -(p['a'] / p['q']) * r1
+    # dcadz = 6273.718 * 1 + -648.450 * x0 + -757.657 * x1 + 1327.217 * x2 + 687.269 * x3 + 13.505 * x0 * x0 + -12.769 * x1+x1 + -30.303 *x2*x2 + 13.541 *x3*x3 + 23.995 *x0*x1 + -31.619 *x0*x2 + -24.010 *x0*x3 + -7.521 *x1*x2 + -0.765 *x1*x3 + -2.262 *x2*x3
+    # dcbdz = 11954.259 * 1 + -689.246 * x0 + 91.225 * x1 + -375.562 * x2 + 161.959 * x3 + 9.538 * x0* x0 + 13.764 *x1*x1 + 0.559 *x2*x2 + -5.017 *x3*x3 + -4.612 *x0*x1 + 13.387 *x0*x2 + -1.372 *x0*x3 + 5.123 *x1*x2 + 8.933 *x1*x3 + -16.197 *x2*x3
+    # dccdz = 5026.515 * 1 + -277.012 * x0 + 477.352 * x1 + 154.129 * x2 + -354.809 * x3 + 3.406 * x0 * x0 + 11.169* x1*x1 + -8.448 *x2*x2 + 4.413 *x3*x3 + -11.355 *x0*x1 + -0.125 *x0*x2 + 11.882 *x0*x3 + -17.904 *x1*x2 + -4.754 *x1*x3 + -17.557 *x2*x3
+    # dcddz = -14960.498 * 1 + 895.601 * x0 + 261.676 * x1 + 13.606 * x2 + 21.526 * x3 + -13.176 * x0 * x0 + -8.606 *x1*x1 + 0.408 *x2*x2 + 10.123 *x3*x3 + -3.127 *x0*x1 + -0.917 *x0*x2 + -3.604 *x0*x3 + -12.228 *x1*x2 + -23.336 *x1*x3 + 2.648 *x2*x3
+    # #dcadz = -(p['a'] / p['q']) * r1
     # dcbdz = (p['a'] / p['q']) * (r1 - r2 - r3)
     # dccdz = (p['a'] / p['q']) * r2
     # dcddz = (p['a'] / p['q']) * r3
+    dcadz = -0.033 * x1 + 3.157 * x1* x1 + -0.304 *x0*x1 + -1.724 *x1*x2 + -1.724 *x1*x3
+    dcbdz = -0.132 * x1 + 12.627 * x1*x1 + -1.216 *x0*x1 + -6.897 *x1*x2 + -6.897 *x1*x3
+    dccdz = 0.066 * x1 + -6.314 *x1*x1 + 0.608 *x0*x1 + 3.448 *x1*x2 + 3.448 *x1*x3
+    dcddz = 0.066 * x1 + -6.314 *x1*x1 + 0.608 *x0*x1 + 3.448 *x1*x2 + 3.448 *x1*x3
+
+    dcadz = -11.076 *x1*x1
+    dcbdz = 0.097 *x1 + -28.654 *x1*x1 + -3.934 *x0*x1 + 14.758 *x1*x2 + 14.758 *x1*x3
+    dccdz = 22.152 *x1*x1
+    dcddz = 22.152 *x1*x1
+
+    #weak sindy output vor hyperparameter tuning
+    # dcadz = -0.405 * x1 + 2.188 *x1*x1 + 0.001 *x2*x2 + 0.001 *x3*x3 + -2.886 *x1*x2 + -2.886 *x1*x3 + 0.001 *x2*x3
+    # dcbdz = -0.136 * x1 + 13.327 *x1*x1 + 0.005 *x2*x2 + 0.005 *x3*x3 + -1.186 *x0*x1 + -7.266 *x1*x2 + -7.266 *x1*x3 + 0.005 *x2*x3
+    # dccdz  = 0.068 * x1 + -6.663 *x1*x1 + -0.002 *x2*x2 + -0.002 *x3*x3 + 0.593 *x0*x1 + 3.633 *x1*x2 + 3.633 *x1*x3 + -0.002 *x2*x3
+    # dcddz = 0.068 * x1 + -6.663 *x1*x1 + -0.002 *x2*x2 + -0.002 *x3*x3 + 0.593 *x0*x1 + 3.633 *x1*x2 + 3.633 *x1*x3 + -0.002 *x2*x3
+
+    # dcadz = -18039.553 *1 + -813.502 *x0 + -1.395 *x1 + 9238.175 *x2 + 4925.538 *x3 + 42.305 *x0*x0 + -56.443 *x1*x1 + 84.664 *x2*x2 + 63.147 *x3*x3 + -5.822 *x0*x1 + -292.681 *x0*x2 + -156.679 *x0*x3 + 43.026 *x1*x3 + -58.061 *x2*x3
+    # dcbdz = -407873.987 *1 + 19458.262 *x0 + -14494.879 *x1 + 28626.575 *x2 + 9161.035 *x3 + -217.727 *x0*x0 + 114.594 *x1*x1 + 311.365 *x2*x2 + -192.208 *x3*x3 + 354.671 *x0*x1 + -919.640 *x0*x2 + -198.425 *x0*x3 + 231.542 *x1*x2 + 373.427 *x1*x3 + -175.850 *x2*x3
+    # dccdz = 212983.367 *1 + -8427.590 *x0 + -3746.627 *x1 + -21646.269 *x2 + -10970.496 *x3 + 59.442 *x0*x0 + -26.926 *x1*x1 + -128.767 *x2*x2 + 73.656 *x3*x3 + 147.298 *x0*x1 + 690.153 *x0*x2 + 313.384 *x0*x3 + -43.599 *x1*x2 + -215.094 *x1*x3 + -37.132 *x2*x3
+    # dcddz = -222188.436 *1 + 15745.143 *x0 + 10196.267 *x1 + -16970.388 *x2 + -849.961 *x3 + -275.376 *x0*x0 + -101.304 *x1*x1 + -218.627 *x2*x2 + -191.489 *x3*x3 + -230.279 *x0*x1 + 536.602 *x0*x2 + 42.973 *x0*x3 + -140.698 *x1*x2 + -432.096 *x1*x3 + 241.202 *x2*x3
 
     # Merging the Concentrations to one array
     dcdz = np.array([dcadz, dcbdz, dccdz, dcddz])
@@ -209,7 +210,7 @@ def ode_system(t, c, p):
 
 
 # Integration area
-zspan = (0, p['seconds'])
+zspan = (0, 1)
 
 
 # Define lambda-function
@@ -218,10 +219,10 @@ func = lambda t,c : ode_system(t,c,p)
 
 # Solving the ODE-System for Initial Conditions
 #sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45')#,t_eval=np.linspace(0, data['L_R'], 10))
-#sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45',t_eval=np.linspace(0, p['seconds'], 1000))
+sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45',t_eval=np.linspace(0, 1, 1000))
 
-zspan = (0, 50)
-sol = integrate.solve_ivp(func, zspan, [100, 50, 10, 0], method='RK45',t_eval=np.linspace(0, 50, 1000))
+#zspan = (0, 50)
+#sol = integrate.solve_ivp(func, zspan, [100, 50, 10, 0], method='RK45',t_eval=np.linspace(0, 50, 1000))
 
 # Unpacking the Trajectories of the Concentrations
 ca = sol.y[0, :]

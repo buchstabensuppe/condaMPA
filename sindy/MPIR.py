@@ -61,7 +61,7 @@ p = {
 # 'rho':
 
 #seconds of simulation:
-'seconds': 1,
+'seconds': 5,
 'L_r': 2,
 "D_r": 0.01,  # Inner diameter reactor in m
 
