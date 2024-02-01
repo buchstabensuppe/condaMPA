@@ -24,47 +24,6 @@ import numpy as np
 import control.matlab as cnt
 from sippy import functionset as fset
 
-
-
-## generating data from MPI reactor simulation:
-from sindy.Parameter_PDE_CH4 import data, update_dependent_values
-from MPIR_callable_function import MPI_reactor
-from sindy.CSTR1 import simCSTR1
-c_in = data['x_in'] * data['p_R'] / (data['R'] * data['T_gas_in'])
-seconds =5 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
-dt = 0.001 #[s]
-n_variables = 3
-seconds = 1 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
-dt = 0.0002 #[s]
-dt_time_seconds = int(seconds/dt)
-
-# Simulation auswählen: basic batch reactor = 1, MPI CSTR = 2
-reactor_choice = 2
-if reactor_choice == 1:
-    n_variables = 3
-    x0s = [100, 50, 10]
-    data = simCSTR1(seconds, dt, n_variables, x0s)
-
-if reactor_choice == 2:
-    n_variables = 4
-    x0 = np.array([0.8, 0.2, 0, 0])
-    x0_test = np.array([0.75, 0.3, 0, 0])
-    data_raw = MPI_reactor(seconds, c_in, dt_time_seconds, x0)
-    data_raw_test = MPI_reactor(seconds, c_in, dt_time_seconds, x0_test)
-    x0s = data_raw[0]
-    x0s_test = data_raw_test[0]
-    data = np.array(data_raw)
-    data_test = np.array(data_raw_test)
-    u = np.zeros((4, 5000))
-    for i in range(dt_time_seconds):
-        u[0, i] = c_in[0]
-        u[1, i] = c_in[1]
-        u[2, i] = c_in[2]
-        u[3, i] = c_in[3]
-    x0s = data[0]
-    x0s_test = data_test[0]
-
-
 # 4*3 MIMO system
 # generating transfer functions in z-operator.
 var_list = [50., 100., 1.]
@@ -189,124 +148,112 @@ Ytot[0, :] = (Ytot1 + err_outputH1).squeeze()
 Ytot[1, :] = (Ytot2 + err_outputH2).squeeze()
 Ytot[2, :] = (Ytot3 + err_outputH3).squeeze()
 
+
 ##identification parameters
-if reactor_choice == 0:
-    ordersna = [na1, na2, na3]
-    ordersnb = [[nb11, nb12, nb13, nb14], [nb21, nb22, nb23, nb24], [nb31, nb32, nb33, nb34]]
-    ordersnc = [nc1, nc2, nc3]
-    theta_list = [[th11, th12, th13, th14], [th21, th22, th23, th24], [th31, th32, th33, th34]]
-if reactor_choice == 2:
-    ordersna = [1, 1, 1, 1]
-    ordersnb = [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]
-    ordersnc = [1, 1, 1, 1]
-    theta_list = [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1],[1, 1, 1, 1]]
+ordersna = [na1, na2, na3]
+ordersnb = [[nb11, nb12, nb13, nb14], [nb21, nb22, nb23, nb24], [nb31, nb32, nb33, nb34]]
+ordersnc = [nc1, nc2, nc3]
+theta_list = [[th11, th12, th13, th14], [th21, th22, th23, th24], [th31, th32, th33, th34]]
 
 # IDENTIFICATION STAGE
 # TESTING ARMAX models
 # iterative LLS
-num_iterations = 20000
-# Id_ARMAXi = system_identification(data, u, 'ARMAX', ARMAX_orders=[ordersna, ordersnb, ordersnc, theta_list],
-#                                   max_iterations=num_iterations, centering = 'MeanVal')  #
+Id_ARMAXi = system_identification(Ytot, Usim, 'ARMAX', ARMAX_orders=[ordersna, ordersnb, ordersnc, theta_list],
+                                  max_iterations=200, centering = 'MeanVal')  #
 # optimization-based
-# Id_ARMAXo = system_identification(data, u, 'ARMAX', ARMAX_orders=[ordersna, ordersnb, ordersnc, theta_list],
-#                                   ARMAX_mod = 'OPT', max_iterations=num_iterations, centering = 'None')  #
+Id_ARMAXo = system_identification(Ytot, Usim, 'ARMAX', ARMAX_orders=[ordersna, ordersnb, ordersnc, theta_list],
+                                  ARMAX_mod = 'OPT', max_iterations=200, centering = 'None')  #
 # recursive LLS
-Id_ARMAXr = system_identification(data, u, 'ARMAX', ARMAX_orders=[ordersna, ordersnb, ordersnc, theta_list],
-                                  ARMAX_mod = 'RLLS', max_iterations=num_iterations, centering = 'InitVal')  #
+Id_ARMAXr = system_identification(Ytot, Usim, 'ARMAX', ARMAX_orders=[ordersna, ordersnb, ordersnc, theta_list],
+                                  ARMAX_mod = 'RLLS', max_iterations=200, centering = 'InitVal')  #
 
 # output of the identified model
-# Yout_ARMAXo = Id_ARMAXo.Yid
+Yout_ARMAXi = Id_ARMAXi.Yid
+Yout_ARMAXo = Id_ARMAXo.Yid
 Yout_ARMAXr = Id_ARMAXr.Yid
-# print('Id_ARMAXi', Id_ARMAXi.G)
-# print('Id_ARMAXo', Id_ARMAXo.G)
-print('Id_ARMAXr', Id_ARMAXr.G)
-Yv_armaxr = fset.validation(Id_ARMAXr,u,Ytot_v,Time, centering = 'InitVal')
-
-
-# print('YoutARMAXr', Id_ARMAXr)
-# print('Yout_ARMAXo', Yout_ARMAXo)
-# print('Yout_ARMAXo', Yout_ARMAXi)
+print(Yout_ARMAXr)
+print(Yout_ARMAXo)
+print(Yout_ARMAXo)
 ######plots
 #
 import matplotlib.pyplot as plt
 
 # U
 plt.close('all')
-# plt.figure(0)
-# plt.subplot(4, 1, 1)
-# plt.plot(Time, Usim[0, :])
-# plt.grid()
-# plt.ylabel("Input 1 - GBN")
-# plt.xlabel("Time")
-# plt.title("Input (Switch probability=0.03) (identification data)")
-#
-# plt.subplot(4, 1, 2)
-# plt.plot(Time, Usim[1, :])
-# plt.grid()
-# plt.ylabel("Input 2 - GBN")
-# plt.xlabel("Time")
-#
-# plt.subplot(4, 1, 3)
-# plt.plot(Time, Usim[2, :])
-# plt.ylabel("Input 3 - GBN")
-# plt.xlabel("Time")
-# plt.grid()
-#
-# plt.subplot(4, 1, 4)
-# plt.plot(Time, Usim[3, :])
-# plt.ylabel("Input 4 - GBN")
-# plt.xlabel("Time")
-# plt.grid()
-#
-# # Y
-# plt.figure(1)
-# plt.subplot(3, 1, 1)
-# plt.plot(Time, Ytot[0, :])
-# plt.plot(Time, Yout_ARMAXi[0,:])
-# plt.plot(Time, Yout_ARMAXo[0,:])
-# plt.plot(Time, Yout_ARMAXr[0,:])
-# plt.ylabel("y$_1$,out")
-# plt.grid()
-# plt.xlabel("Time")
-# plt.title("Identification data")
-# plt.legend(['System', 'ARMAX-I', 'ARMAX-0', 'ARMAX-R'])
-#
-# plt.subplot(3, 1, 2)
-# plt.plot(Time, Ytot[1, :])
-# plt.plot(Time, Yout_ARMAXi[1,:])
-# plt.plot(Time, Yout_ARMAXo[1,:])
-# plt.plot(Time, Yout_ARMAXr[1,:])
-# plt.ylabel("y$_2$,out")
-# plt.grid()
-# plt.xlabel("Time")
-# plt.legend(['System', 'ARMAX-I', 'ARMAX-0', 'ARMAX-R'])
-#
-# plt.subplot(3, 1, 3)
-# plt.plot(Time, Ytot[2, :])
-# plt.plot(Time, Yout_ARMAXi[2,:])
-# plt.plot(Time, Yout_ARMAXo[2,:])
-# plt.plot(Time, Yout_ARMAXr[2,:])
-# plt.ylabel("y$_3$,out")
-# plt.grid()
-# plt.xlabel("Time")
-# plt.legend(['System', 'ARMAX-I', 'ARMAX-0', 'ARMAX-R'])
-#
+plt.figure(0)
+plt.subplot(4, 1, 1)
+plt.plot(Time, Usim[0, :])
+plt.grid()
+plt.ylabel("Input 1 - GBN")
+plt.xlabel("Time")
+plt.title("Input (Switch probability=0.03) (identification data)")
+
+plt.subplot(4, 1, 2)
+plt.plot(Time, Usim[1, :])
+plt.grid()
+plt.ylabel("Input 2 - GBN")
+plt.xlabel("Time")
+
+plt.subplot(4, 1, 3)
+plt.plot(Time, Usim[2, :])
+plt.ylabel("Input 3 - GBN")
+plt.xlabel("Time")
+plt.grid()
+
+plt.subplot(4, 1, 4)
+plt.plot(Time, Usim[3, :])
+plt.ylabel("Input 4 - GBN")
+plt.xlabel("Time")
+plt.grid()
+
+# Y
+plt.figure(1)
+plt.subplot(3, 1, 1)
+plt.plot(Time, Ytot[0, :])
+plt.plot(Time, Yout_ARMAXi[0,:])
+plt.plot(Time, Yout_ARMAXo[0,:])
+plt.plot(Time, Yout_ARMAXr[0,:])
+plt.ylabel("y$_1$,out")
+plt.grid()
+plt.xlabel("Time")
+plt.title("Identification data")
+plt.legend(['System', 'ARMAX-I', 'ARMAX-0', 'ARMAX-R'])
+
+plt.subplot(3, 1, 2)
+plt.plot(Time, Ytot[1, :])
+plt.plot(Time, Yout_ARMAXi[1,:])
+plt.plot(Time, Yout_ARMAXo[1,:])
+plt.plot(Time, Yout_ARMAXr[1,:])
+plt.ylabel("y$_2$,out")
+plt.grid()
+plt.xlabel("Time")
+plt.legend(['System', 'ARMAX-I', 'ARMAX-0', 'ARMAX-R'])
+
+plt.subplot(3, 1, 3)
+plt.plot(Time, Ytot[2, :])
+plt.plot(Time, Yout_ARMAXi[2,:])
+plt.plot(Time, Yout_ARMAXo[2,:])
+plt.plot(Time, Yout_ARMAXr[2,:])
+plt.ylabel("y$_3$,out")
+plt.grid()
+plt.xlabel("Time")
+plt.legend(['System', 'ARMAX-I', 'ARMAX-0', 'ARMAX-R'])
+
 
 ### VALIDATION STAGE
 
 # time
-tfin = 1
+tfin = 400
 npts = int(old_div(tfin, ts)) + 1
 Time = np.linspace(0, tfin, npts)
 
 # (NEW) INPUTS
-U_valid = u
-# U_valid = np.zeros((4, npts))
-# Usim_noise = np.zeros((4, npts))
-# [U_valid[0, :],_,_] = fset.GBN_seq(npts, 0.03, Range = [0.33, 0.7])
-# [U_valid[1, :],_,_] = fset.GBN_seq(npts, 0.03, Range = [-2., -1.])
-# [U_valid[2, :],_,_] = fset.GBN_seq(npts, 0.03, Range = [1.3, 2.7])
-# [U_valid[3, :],_,_] = fset.GBN_seq(npts, 0.03, Range = [1., 5.2])
+U_valid = np.zeros((4, npts))
+Usim_noise = np.zeros((4, npts))
+[U_valid[0, :],_,_] = fset.GBN_seq(npts, 0.03, Range = [0.33, 0.7])
+[U_valid[1, :],_,_] = fset.GBN_seq(npts, 0.03, Range = [-2., -1.])
+[U_valid[2, :],_,_] = fset.GBN_seq(npts, 0.03, Range = [1.3, 2.7])
+[U_valid[3, :],_,_] = fset.GBN_seq(npts, 0.03, Range = [1., 5.2])
 # Noise
 err_inputH = np.zeros((4, npts))
 err_inputH = fset.white_noise_var(npts, var_list)
@@ -409,8 +356,6 @@ plt.grid()
 plt.xlabel("Time")
 plt.legend(['System', 'ARMAX-I', 'ARMAX-0', 'ARMAX-R'])
 
+
 plt.show()
 
-print('Ytot_v', Ytot_v)
-
-breakbreak = True
