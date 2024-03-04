@@ -51,9 +51,9 @@ u_test = data_test
 rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
 u_dot_clean = ps.FiniteDifference()._differentiate(u_test, t=dt)
 u_clean = u_test
-u_train = u_train + np.random.normal(0, rmse / 40.0, u_train.shape)  # Add 20% noise
+u_train = u_train + np.random.normal(0, rmse / 80.0, u_train.shape)  # Add 20% noise
 rmse = mean_squared_error(u_test, np.zeros(u_test.shape), squared=False)
-u_test = u_test + np.random.normal(0, rmse / 40.0, u_test.shape)  # Add 20% noise
+u_test = u_test + np.random.normal(0, rmse / 80.0, u_test.shape)  # Add 20% noise
 u_dot = ps.FiniteDifference()._differentiate(u_test, t=dt)
 
 # Same library terms as before
@@ -81,17 +81,28 @@ for i, K in enumerate(K_scan):
         tol=1e-1,
     )
     u_dot_train_integral = ode_lib.convert_u_dot_integral(u_train)
+    u_valid_train_integral = ode_lib.convert_u_dot_integral(u_test)
 
     # Instantiate and fit the SINDy model with the integral of u_dot
     model = ps.SINDy(feature_library=ode_lib, optimizer=opt)
     model.fit(u_train, quiet=True)
-    errs[i] = np.sqrt(
-        (
-            np.sum((u_dot_train_integral - opt.Theta_ @ opt.coef_.T) ** 2)
-            / np.sum(u_dot_train_integral ** 2)
+    validate_with_test_data = False
+    if validate_with_test_data == True:
+        errs[i] = np.sqrt(
+            (
+                np.sum((u_valid_train_integral - opt.Theta_ @ opt.coef_.T) ** 2)
+                / np.sum(u_valid_train_integral ** 2)
+            )
+            / u_valid_train_integral.shape[0]
         )
-        / u_dot_train_integral.shape[0]
-    )
+    else:
+        errs[i] = np.sqrt(
+            (
+                np.sum((u_dot_train_integral - opt.Theta_ @ opt.coef_.T) ** 2)
+                / np.sum(u_dot_train_integral ** 2)
+            )
+            / u_dot_train_integral.shape[0]
+        )
     model.print()
 
 #ploting error graph
