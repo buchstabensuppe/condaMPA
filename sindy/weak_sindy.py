@@ -203,6 +203,32 @@ for j in range(n_variables):
         u_valid[i,j] = u_train[i,j] * (1 + noise)
 print(u_valid)
 
+# run weak sindy again, with the noise defined above this line, but without hyperparameter tuning below:
+library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y]
+library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y]
+ode_lib = ps.WeakPDELibrary(
+    library_functions=library_functions,
+    function_names=library_function_names,
+    spatiotemporal_grid=t_train,
+    is_uniform=True,
+    K=20,
+)
+
+# Instantiate and fit the SINDy model with the integral of u_dot
+optimizer = ps.SR3(
+    threshold=0.001, thresholder="l1", max_iter=10000, normalize_columns=True, tol=1e-2
+)
+model = ps.SINDy(feature_library=ode_lib, optimizer=optimizer)
+model.fit(u_train)
+model.print()
+
+import symbolic_model_to_simulation
+from symbolic_model_to_simulation import simulate_sindy_result
+
+simulate_sindy_result(model.coefficients(), x0, seconds, dt_time_seconds)
+
+######### Hyperparameter tuing part below ####################
+
 # Same library terms as before
 library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y]
 library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y]
@@ -226,7 +252,7 @@ for i, K in enumerate(K_scan):
         thresholder="l1",
         max_iter=100000,
         normalize_columns=True,
-        tol=1e-5, #lower tol -> more overfitting, higher tol -> faster convergance but higher error
+        tol=1e-1, #lower tol -> more overfitting, higher tol -> faster convergance but higher error
     )
     u_dot_train_integral = ode_lib.convert_u_dot_integral(u_train)
 
