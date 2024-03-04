@@ -58,8 +58,8 @@ if reactor_choice == 2:
     n_variables = 4
     x0 = np.array([0.8, 0.2, 0, 0])
     x0_test = np.array([0.6, 0.15, 0, 0])
-    data_raw = MPI_reactor(seconds, dt_time_seconds, x0)
-    data_raw_test = MPI_reactor(seconds, dt_time_seconds, x0_test)
+    data_raw = MPI_reactor(seconds, dt_time_seconds, x0, dont_plot = False)
+    data_raw_test = MPI_reactor(seconds, dt_time_seconds, x0_test, dont_plot = False)
     x0s = data_raw[0]
     x0s_test = data_raw_test[0]
     data_tmp = np.array(data_raw)

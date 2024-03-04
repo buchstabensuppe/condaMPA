@@ -20,7 +20,7 @@ from Parameter_PDE_CH4 import data, update_dependent_values
 #print(r)
 
 
-def MPI_reactor(seconds, steps, x0):
+def MPI_reactor(seconds, steps, x0, dont_plot):
     # Dictionary of Parameters
     p = {
 
@@ -210,14 +210,15 @@ def MPI_reactor(seconds, steps, x0):
     cb = sol.y[1,:]
     cc = sol.y[2,:]
     cd = sol.y[3,:]
-
-    # Plotting the Result
-    # fig, ax = plt.subplots()
-    # ax.plot(sol.t,ca,sol.t,cb,sol.t,cc,sol.t,cd)
-    # ax.set_xlabel('zeit in sekunden und so')
-    # ax.set_ylabel('Concentration c in mol/m^3')
-    # ax.legend(['H2','CO2','CH4','H2O'])
-    # plt.show()
+    if not dont_plot:
+        # Plotting the Result
+        fig, ax = plt.subplots()
+        ax.plot(sol.t,ca,sol.t,cb,sol.t,cc,sol.t,cd)
+        ax.set_xlabel('zeit in sekunden und so')
+        ax.set_ylabel('Concentration c in mol/m^3')
+        ax.legend(['H2','CO2','CH4','H2O'])
+        plt.title('plot of input data for sindy')
+        plt.show()
 
     breakbreak = True
 

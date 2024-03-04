@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 
 def ode_as_strings(coeffs):
     # Define symbolic variables for states
-    x0, x1, x2, x3 = sp.symbols("x0 x1 x2 x3")  # Adjust variable names if needed
-
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13 = sp.symbols("x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13")  # Adjust variable names if needed
+    variable_combinations = ["x0", "x1", "x2", "x3", "x0 * x0", "x1 * x1", "x2 * x2", "x3 * x3", "x0 * x1", "x0 * x2",
+                             "x0 * x3", "x1* x2", "x1 * x3", "x2 * x3"]
     # Initialize empty lists to store the ODEs symbolically
     ode_list_symbolic = []
 
@@ -18,7 +19,9 @@ def ode_as_strings(coeffs):
         state_coeffs = coeffs[i]
 
         # Use list comprehension to construct the symbolic expression for the derivative
-        symbolic_derivative = sp.Add(*[coeff * sp.Symbol(f"f{j}") for j, coeff in enumerate(state_coeffs)])
+        #symbolic_derivative = sp.Add(*[coeff * sp.Symbol(variable_combinations[j]) for j, coeff in enumerate(state_coeffs)])
+        # Use list comprehension to construct the symbolic expression for the derivative
+        symbolic_derivative = sp.Add(*[coeff * sp.Symbol(f"x{j}") for j, coeff in enumerate(state_coeffs)])
 
         # Append the symbolic expression to the list
         ode_list_symbolic.append(symbolic_derivative)
@@ -30,15 +33,15 @@ def ode_as_strings(coeffs):
     return ode_list_symbolic
 def simulate_sindy_result(coeffs, x0_sim, seconds, steps):
     ode_list_symbolic = ode_as_strings(coeffs)
-    x0, x1, x2, x3 = sp.symbols("x0 x1 x2 x3")  # Adjust variable names if needed
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13 = sp.symbols("x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13")  # Adjust variable names if needed
 
     print(ode_list_symbolic)
     def ode_system(t, x):
         # Replace placeholders with the actual symbolic expressions or strings
-        dx1_dt = ode_list_symbolic[0].subs({x0: x[0], x1: x[1], x2: x[2], x3: x[3]})
-        dx2_dt = ode_list_symbolic[1].subs({x0: x[0], x1: x[1], x2: x[2], x3: x[3]})
-        dx3_dt = ode_list_symbolic[2].subs({x0: x[0], x1: x[1], x2: x[2], x3: x[3]})
-        dx4_dt = ode_list_symbolic[3].subs({x0: x[0], x1: x[1], x2: x[2], x3: x[3]})
+        dx1_dt = sp.N(ode_list_symbolic[0].subs({x0: x[0], x1: x[1], x2: x[2], x3: x[3], x4: x[0] * x[0], x5: x[1] * x[1], x6: x[2] * x[2], x7: x[3] * x[3], x8: x[0] * x[1], x9: x[0] * x[2], x10: x[0] * x[3], x11: x[1] * x[2], x12: x[1] * x[3], x13: x[2] * x[3]}))
+        dx2_dt = sp.N(ode_list_symbolic[1].subs({x0: x[0], x1: x[1], x2: x[2], x3: x[3], x4: x[0] * x[0], x5: x[1] * x[1], x6: x[2] * x[2], x7: x[3] * x[3], x8: x[0] * x[1], x9: x[0] * x[2], x10: x[0] * x[3], x11: x[1] * x[2], x12: x[1] * x[3], x13: x[2] * x[3]}))
+        dx3_dt = sp.N(ode_list_symbolic[2].subs({x0: x[0], x1: x[1], x2: x[2], x3: x[3], x4: x[0] * x[0], x5: x[1] * x[1], x6: x[2] * x[2], x7: x[3] * x[3], x8: x[0] * x[1], x9: x[0] * x[2], x10: x[0] * x[3], x11: x[1] * x[2], x12: x[1] * x[3], x13: x[2] * x[3]}))
+        dx4_dt = sp.N(ode_list_symbolic[3].subs({x0: x[0], x1: x[1], x2: x[2], x3: x[3], x4: x[0] * x[0], x5: x[1] * x[1], x6: x[2] * x[2], x7: x[3] * x[3], x8: x[0] * x[1], x9: x[0] * x[2], x10: x[0] * x[3], x11: x[1] * x[2], x12: x[1] * x[3], x13: x[2] * x[3]}))
         dcdz = np.array([dx1_dt, dx2_dt, dx3_dt, dx4_dt])
 
         return dcdz
@@ -66,5 +69,6 @@ def simulate_sindy_result(coeffs, x0_sim, seconds, steps):
     ax.set_xlabel('zeit in sekunden und so')
     ax.set_ylabel('Concentration c in mol/m^3')
     ax.legend(['H2','CO2','CH4','H2O'])
+    plt.title('automatic plot of sindy result:')
     plt.show()
 
