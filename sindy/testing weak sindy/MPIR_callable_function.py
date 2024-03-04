@@ -20,7 +20,7 @@ from Parameter_PDE_CH4 import data, update_dependent_values
 #print(r)
 
 
-def MPI_reactor(seconds, steps, x0):
+def MPI_reactor(seconds, steps):
     # Dictionary of Parameters
     p = {
 
@@ -70,7 +70,7 @@ def MPI_reactor(seconds, steps, x0):
     }
 
     # Vector of Initial Concentrations
-    p['cin']  =  x0 * data['p_R'] / (data['R'] * data['T_gas_in'])
+    p['cin']  =  data['x_in'] * data['p_R'] / (data['R'] * data['T_gas_in'])
 
     ############### Temperatur in bereitgestellten Daten konstant?
 
@@ -98,7 +98,7 @@ def MPI_reactor(seconds, steps, x0):
 
         for i in range(4):
             if c[i] <= 0:
-                c[i] = 1e-12
+                c[i] = 0
 
         x[0] = ca/sum_c
 
@@ -164,7 +164,7 @@ def MPI_reactor(seconds, steps, x0):
         # dccdt = (1 / tau)(c_in[2] - cc) + p['nu_c'] * p['rho'] * r
         # dcddt = (1 / tau)(c_in[3] - cd) + p['nu_d'] * p['rho'] * r
         # soll nu ein ny sein?
-        ny = np.array([-4, -1, 2, 2])
+        ny = np.array([-1, -4, 2, 2])
 
         # print('tau:', tau)
         # print('c_in(0)', c_in[0])
@@ -173,10 +173,13 @@ def MPI_reactor(seconds, steps, x0):
         # print('r:', r)
 
         #tau = 0.2
-        dcadz = (1 / tau)*(c_in[0] - ca) + ny[0] * 1032 * r
-        dcbdz = (1 / tau)*(c_in[1] - cb) + ny[1] * 1032 * r
-        dccdz = (1 / tau)*(c_in[2] - cc) + ny[2] * 1032 * r #data['rho_cat'] * r
-        dcddz = (1 / tau)*(c_in[3] - cd) + ny[3] * 1032 * r
+        a = c_in[0]
+        b = c_in[1]
+        c = c_in[2]
+        dcadz = 0.002 * c - 0.008 * a * b
+        dcbdz = 0.002 * c - 0.008 * a * b
+        dccdz = 0.016 * a * b - 0.004 * c
+        dcddz = 0
 
         #               CO2 + 4H2 -> 2CH4 + 2H2O
 
@@ -202,7 +205,7 @@ def MPI_reactor(seconds, steps, x0):
 
     # Solving the ODE-System for Initial Conditions
     #sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45')#,t_eval=np.linspace(0, data['L_R'], 10))
-    sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45',t_eval=np.linspace(0, seconds, steps))
+    sol = integrate.solve_ivp(func, zspan, [100,50,10,0], method='RK45',t_eval=np.linspace(0, seconds, steps))
 
 
     # Unpacking the Trajectories of the Concentrations
@@ -212,12 +215,12 @@ def MPI_reactor(seconds, steps, x0):
     cd = sol.y[3,:]
 
     # Plotting the Result
-    # fig, ax = plt.subplots()
-    # ax.plot(sol.t,ca,sol.t,cb,sol.t,cc,sol.t,cd)
-    # ax.set_xlabel('zeit in sekunden und so')
-    # ax.set_ylabel('Concentration c in mol/m^3')
-    # ax.legend(['H2','CO2','CH4','H2O'])
-    # plt.show()
+    fig, ax = plt.subplots()
+    ax.plot(sol.t,ca,sol.t,cb,sol.t,cc,sol.t,cd)
+    ax.set_xlabel('zeit in sekunden und so')
+    ax.set_ylabel('Concentration c in mol/m^3')
+    ax.legend(['H2','CO2','CH4','H2O'])
+    plt.show()
 
     breakbreak = True
 

@@ -53,6 +53,12 @@ u_dot = ps.FiniteDifference()._differentiate(u_train, t=dt)
 library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y]
 library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y]
 
+# putting noise on train data:
+rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
+u_train = u_train + np.random.normal(0, rmse / 160.0, u_train.shape)  # Add 20% noise
+print('u_train with noise:', u_train)
+
+
 # Instantiate and fit a non-weak SINDy model
 ode_lib = ps.CustomLibrary(
     library_functions=library_functions,
@@ -60,7 +66,7 @@ ode_lib = ps.CustomLibrary(
     include_bias=True,
 )
 optimizer = ps.SR3(
-    threshold=100, thresholder="l0", max_iter=10000, normalize_columns=True, tol=1e-10
+    threshold=100, thresholder="l0", max_iter=10000, normalize_columns=True, tol=1e-3
 )
 original_model = ps.SINDy(feature_library=ode_lib, optimizer=optimizer)
 original_model.fit(u_train, t=dt, quiet=True)
@@ -84,10 +90,10 @@ u_test = np.copy(u_train)
 rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
 u_dot_clean = ps.FiniteDifference()._differentiate(u_test, t=dt)
 u_clean = u_test
-u_train = u_train + np.random.normal(0, rmse / 160.0, u_train.shape)  # Add 20% noise
+u_train = u_train + np.random.normal(0, rmse / 500.0, u_train.shape)  # Add 20% noise
 print('u_train with noise:', u_train)
 rmse = mean_squared_error(u_test, np.zeros(u_test.shape), squared=False)
-u_test = u_test + np.random.normal(0, rmse / 160.0, u_test.shape)  # Add 20% noise
+u_test = u_test + np.random.normal(0, rmse / 500.0, u_test.shape)  # Add 20% noise
 u_dot = ps.FiniteDifference()._differentiate(u_test, t=dt)
 
 

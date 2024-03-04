@@ -69,7 +69,9 @@ p = {
 }
 
 # Vector of Initial Concentrations
-p['cin']  =  data['x_in'] * data['p_R'] / (data['R'] * data['T_gas_in'])
+p['cin']  =  np.array([0.8, 0.2, 0, 0]) * data['p_R'] / (data['R'] * data['T_gas_in'])
+p['cin']  =  np.array([0.8, 0.2, 0, 0]) * data['p_R'] / (data['R'] * data['T_gas_in'])
+
 
 ############### Temperatur in bereitgestellten Daten konstant?
 
@@ -163,7 +165,7 @@ def ode_system(t, c, p):
     # dccdt = (1 / tau)(c_in[2] - cc) + p['nu_c'] * p['rho'] * r
     # dcddt = (1 / tau)(c_in[3] - cd) + p['nu_d'] * p['rho'] * r
     # soll nu ein ny sein?
-    ny = np.array([-4, -1, 2, 2])
+    ny = np.array([-1, -4, 2, 2])
 
     # print('tau:', tau)
     # print('c_in(0)', c_in[0])
@@ -172,11 +174,17 @@ def ode_system(t, c, p):
     # print('r:', r)
 
     #tau = 0.2
-    dcadz = (1 / tau)*(c_in[0] - ca) + ny[0] * 1032 * r
-    dcbdz = (1 / tau)*(c_in[1] - cb) + ny[1] * 1032 * r
-    dccdz = (1 / tau)*(c_in[2] - cc) + ny[2] * 1032 * r #data['rho_cat'] * r
-    dcddz = (1 / tau)*(c_in[3] - cd) + ny[3] * 1032 * r
-
+    # dcadz = (1 / tau)*(c_in[0] - ca) + ny[0] * 1032 * r
+    # dcbdz = (1 / tau)*(c_in[1] - cb) + ny[1] * 1032 * r
+    # dccdz = (1 / tau)*(c_in[2] - cc) + ny[2] * 1032 * r #data['rho_cat'] * r
+    # dcddz = (1 / tau)*(c_in[3] - cd) + ny[3] * 1032 * r
+    a = ca
+    b = cb
+    l = cc
+    dcadz = 0.002 * l - 0.008 * a * b
+    dcbdz = 0.002 * l - 0.008 * a * b
+    dccdz = 0.016 * a * b - 0.004 * l
+    dcddz = 0
     #               CO2 + 4H2 -> 2CH4 + 2H2O
 
     # dcadz = -(p['a'] / p['q']) * r1
@@ -193,22 +201,21 @@ def ode_system(t, c, p):
 
 
 # Integration area
-zspan = (0, p['seconds'])
+zspan = (0, 5)
 
 # Define lambda-function
 func = lambda t,c : ode_system(t,c,p)
-
-
+t_evaluation = np.linspace(0,5,5000)
 # Solving the ODE-System for Initial Conditions
 #sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45')#,t_eval=np.linspace(0, data['L_R'], 10))
-sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45',t_eval=np.linspace(0, p['seconds'], 1000))
+sol = integrate.solve_ivp(func, zspan, [100,50,10,0], method='RK45',t_eval=t_evaluation)
 
 
 # Unpacking the Trajectories of the Concentrations
-ca = sol.y[0,:]
-cb = sol.y[1,:]
-cc = sol.y[2,:]
-cd = sol.y[3,:]
+ca = sol.y[0, :]
+cb = sol.y[1, :]
+cc = sol.y[2, :]
+cd = sol.y[3, :]
 
 # Plotting the Result
 fig, ax = plt.subplots()

@@ -31,8 +31,8 @@ from sindy.Parameter_PDE_CH4 import data, update_dependent_values
 from MPIR_callable_function import MPI_reactor
 from sindy.CSTR1 import simCSTR1
 c_in = data['x_in'] * data['p_R'] / (data['R'] * data['T_gas_in'])
-seconds =5 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
-dt = 0.001 #[s]
+seconds =1 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
+dt = 0.01 #[s]
 n_variables = 3
 seconds = 1 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
 dt = 0.0002 #[s]
@@ -55,7 +55,7 @@ if reactor_choice == 2:
     x0s_test = data_raw_test[0]
     data = np.array(data_raw)
     data_test = np.array(data_raw_test)
-    u = np.zeros((4, 5000))
+    u = np.zeros((4, dt_time_seconds))
     for i in range(dt_time_seconds):
         u[0, i] = c_in[0]
         u[1, i] = c_in[1]
@@ -199,17 +199,17 @@ if reactor_choice == 2:
     ordersna = [1, 1, 1, 1]
     ordersnb = [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]]
     ordersnc = [1, 1, 1, 1]
-    theta_list = [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1],[1, 1, 1, 1]]
+    theta_list = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0],[0, 0, 0, 0]]
 
 # IDENTIFICATION STAGE
 # TESTING ARMAX models
 # iterative LLS
-num_iterations = 20000
+num_iterations = 2000000
 # Id_ARMAXi = system_identification(data, u, 'ARMAX', ARMAX_orders=[ordersna, ordersnb, ordersnc, theta_list],
 #                                   max_iterations=num_iterations, centering = 'MeanVal')  #
 # optimization-based
-# Id_ARMAXo = system_identification(data, u, 'ARMAX', ARMAX_orders=[ordersna, ordersnb, ordersnc, theta_list],
-#                                   ARMAX_mod = 'OPT', max_iterations=num_iterations, centering = 'None')  #
+Id_ARMAXo = system_identification(data, u, 'ARMAX', ARMAX_orders=[ordersna, ordersnb, ordersnc, theta_list],
+                                  ARMAX_mod = 'OPT', max_iterations=num_iterations, centering = 'None')  #
 # recursive LLS
 Id_ARMAXr = system_identification(data, u, 'ARMAX', ARMAX_orders=[ordersna, ordersnb, ordersnc, theta_list],
                                   ARMAX_mod = 'RLLS', max_iterations=num_iterations, centering = 'InitVal')  #
@@ -218,7 +218,7 @@ Id_ARMAXr = system_identification(data, u, 'ARMAX', ARMAX_orders=[ordersna, orde
 # Yout_ARMAXo = Id_ARMAXo.Yid
 Yout_ARMAXr = Id_ARMAXr.Yid
 # print('Id_ARMAXi', Id_ARMAXi.G)
-# print('Id_ARMAXo', Id_ARMAXo.G)
+print('Id_ARMAXo', Id_ARMAXo.G)
 print('Id_ARMAXr', Id_ARMAXr.G)
 Yv_armaxr = fset.validation(Id_ARMAXr,u,Ytot_v,Time, centering = 'InitVal')
 

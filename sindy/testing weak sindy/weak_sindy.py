@@ -1,5 +1,5 @@
 #source: https://pysindy.readthedocs.io/en/latest/examples/12_weakform_SINDy_examples/example.html#Test-weak-form-ODE-functionality-on-Lorenz-equation
-import random
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import solve_ivp
@@ -42,41 +42,32 @@ integrator_keywords["atol"] = 1e-12
 #CSTR Simulation aufrufen und Simulationsdaten importeren
 
 
-seconds = 1 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
+seconds = 5 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
 dt = 0.001 #[s]
 dt_time_seconds = int(seconds/dt)
 
 # Simulation auswählen: basic batch reactor = 1, MPI CSTR = 2
-reactor_choice = 2
+reactor_choice = 1
 if reactor_choice == 1:
     n_variables = 3
     x0s = [100, 50, 10]
-    x0 = x0s
     data = simCSTR1(seconds, dt, n_variables, x0s)
 
 if reactor_choice == 2:
     n_variables = 4
-    x0 = np.array([0.8, 0.2, 0, 0])
-    x0_test = np.array([0.6, 0.15, 0, 0])
-    data_raw = MPI_reactor(seconds, dt_time_seconds, x0)
-    data_raw_test = MPI_reactor(seconds, dt_time_seconds, x0_test)
+    data_raw = MPI_reactor(seconds, dt_time_seconds)
     x0s = data_raw[0]
-    x0s_test = data_raw_test[0]
     data_tmp = np.array(data_raw)
-    data_tmp_test = np.array(data_raw_test)
-    data = np.zeros((dt_time_seconds, 4))
-    data_test = np.zeros((dt_time_seconds,4))
+    data = np.zeros((5000, 4))
     for i in range(dt_time_seconds):
         data[i] = [data_tmp[0, i], data_tmp[1, i], data_tmp[2, i], data_tmp[3, i]]
-        data_test[i] = [data_tmp_test[0, i], data_tmp_test[1, i], data_tmp_test[2, i], data_tmp_test[3, i]]
+    print(data, x0s)
 
 # mein CSTR in original namen übersetzen
-# x0 = x0 * (1/35)
-# data = (1/35) * data
+
 t_train = np.arange(0, seconds, dt)
 t_train_span = (t_train[0], t_train[-1])
 u_train = data
-u_test = data_test
 
 # Instantiate and fit the SINDy model with u_dot
 u_dot = ps.FiniteDifference()._differentiate(u_train, t=dt)
@@ -95,21 +86,17 @@ ode_lib = ps.WeakPDELibrary(
     function_names=library_function_names,
     spatiotemporal_grid=t_train,
     is_uniform=True,
-    K=20,
+    K=100,
 )
 
 # Instantiate and fit the SINDy model with the integral of u_dot
 optimizer = ps.SR3(
-    threshold=0.001, thresholder="l1", max_iter=10000, normalize_columns=True, tol=1e-4
+    threshold=0.0001, thresholder="l1", max_iter=10000, normalize_columns=True, tol=1e-6
 )
 model = ps.SINDy(feature_library=ode_lib, optimizer=optimizer)
 model.fit(u_train)
 model.print()
 
-import symbolic_model_to_simulation
-from symbolic_model_to_simulation import simulate_sindy_result
-
-simulate_sindy_result(model.coefficients(), x0, seconds, dt_time_seconds)
 
 # Instantiate and fit a non-weak SINDy model
 
@@ -169,39 +156,23 @@ simulate_sindy_result(model.coefficients(), x0, seconds, dt_time_seconds)
 # u_test = x_test
 # u_train = x_train
 u_train = data
-u_test = data_test
+u_test = data
 # u_train = solve_ivp(
 #     lorenz, t_train_span, u0_train, t_eval=t_train, **integrator_keywords
 # ).y.T
 #u_test = solve_ivp(
 #    lorenz, t_train_span, u0_test, t_eval=t_train, **integrator_keywords).y.T
 
-u_test = u_train
-#
-# # noise implementation weak_sindy docu:
-# rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
-# u_dot_clean = ps.FiniteDifference()._differentiate(u_test, t=dt)
-# u_clean = u_test
-# u_train = u_train + np.random.normal(0, rmse / 300.0, u_train.shape)  # Add 20% noise
-# print('u_train with noise:', u_train)
-# rmse = mean_squared_error(u_test, np.zeros(u_test.shape), squared=False)
-# u_test = u_test + np.random.normal(0, rmse / 300.0, u_test.shape)  # Add 20% noise
-# u_dot = ps.FiniteDifference()._differentiate(u_test, t=dt)
-#
-# noise implementation alex
-print(u_train)
-for j in range(n_variables):
-    for i in range(len(u_train)):
-        noise = np.random.normal(0, 0.001, u_train[i,j].shape)
-        u_train[i,j] = u_train[i,j] * (1 + noise)
-print(u_train)
-u_valid = u_train
-print(u_valid)
-for j in range(n_variables):
-    for i in range(len(u_train)):
-        noise = np.random.normal(0, 0.001, u_train[i,j].shape)
-        u_valid[i,j] = u_train[i,j] * (1 + noise)
-print(u_valid)
+#u_test = u_train
+
+rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
+u_dot_clean = ps.FiniteDifference()._differentiate(u_test, t=dt)
+u_clean = u_test
+u_train = u_train + np.random.normal(0, rmse / 80.0, u_train.shape)  # Add 20% noise
+print('u_train with noise:', u_train)
+rmse = mean_squared_error(u_test, np.zeros(u_test.shape), squared=False)
+u_test = u_test + np.random.normal(0, rmse / 80.0, u_test.shape)  # Add 20% noise
+u_dot = ps.FiniteDifference()._differentiate(u_test, t=dt)
 
 # Same library terms as before
 library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y]
@@ -218,29 +189,28 @@ for i, K in enumerate(K_scan):
         spatiotemporal_grid=t_train,
         include_bias=True,
         is_uniform=True,
-        K=20, # soll ich laut google bard varrieren, um overfitting zu reduzieren. Laut bard mit 2 oder 3 starten und dann langsam erhöhen. Ursprünglich: K=K
+        K=K,
     )
     #opt = optimizer
     opt = ps.SR3(
-        threshold=0.3,
-        thresholder="l1",
-        max_iter=100000,
+        threshold=0.001,
+        thresholder="l0",
+        max_iter=1000000,
         normalize_columns=True,
-        tol=1e-5, #lower tol -> more overfitting, higher tol -> faster convergance but higher error
+        tol=1e-9,
     )
     u_dot_train_integral = ode_lib.convert_u_dot_integral(u_train)
 
     # Instantiate and fit the SINDy model with the integral of u_dot
     model = ps.SINDy(feature_library=ode_lib, optimizer=opt)
     model.fit(u_train)
-    u_valid_train_integral = ode_lib.convert_u_dot_integral(u_valid)
     errs[i] = np.sqrt(
-
         (
             np.sum((u_dot_train_integral - opt.Theta_ @ opt.coef_.T) ** 2)
-            #/ np.sum(u_dot_train_integral**2)
-        ))/ u_dot_train_integral.shape[0]
-
+            / np.sum(u_dot_train_integral**2)
+        )
+        / u_dot_train_integral.shape[0]
+    )
     print('final model', i, 'shown in plot:')
     model.print()
     breakbreak = True
@@ -256,12 +226,4 @@ plt.show()
 
 breakbreak = True
 
-# Potential parameters to vary for weak_sindy:
-# K: 'K determines the complexity of the model by specifying the number of basis functions used to represent the underlying dynamics.'
-# Thresholder: L1 best to avoid overfitting according to google bard
-# threshold
-# error
-
-# Hyperparamter tuning: Not possible without working error metrics
-
-# -> first goal: finding a working error metric
+#

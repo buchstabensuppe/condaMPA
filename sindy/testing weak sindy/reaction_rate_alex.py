@@ -7,7 +7,7 @@ Created on Mon Mar 27 08:42:30 2023
 """
 import jax.numpy as np
 import jax
-from sindy.Parameter_PDE_CH4 import data
+from Parameter_PDE_CH4 import data
 
 
 def reaction_rate(T, x, p):
