@@ -72,7 +72,7 @@ u_train *= (u_train > 0)
 u_test *= (u_test > 0)
 u_dot *= (u_dot > 0)
 
-# applying noise filters:
+# applying noise filters: (none of which are working <sad pepe face>)
 if filter == True:
     from scipy.signal import medfilt
     # Example usage
@@ -81,13 +81,21 @@ if filter == True:
     u_train = u_train_filtered
     u_test = u_test_filtered
 
-# Same library terms as before
-
-#library set with x^3:
+#library set ending with sin cos tan
 library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y, lambda x, y: x * x *y, lambda x: x * x * x,
-                     ]#lambda x: np.sin(x)]
+                     lambda x: np.sin(x), lambda x: np.cos(x), lambda x: np.tan(x)]
 library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y, lambda x, y: x + x + y, lambda x: x + x + x,
-                          ]#lambda x: "sin"+x]
+                          lambda x: "sin"+x, lambda x: "cos"+x, lambda x: "tan"+x]
+
+# library set ending with xtanx
+library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y, lambda x, y: x * x *y, lambda x: x * x * x,
+                     lambda x: np.sin(x), lambda x: np.cos(x), lambda x: np.tan(x),
+                     lambda x: x*np.sin(x), lambda x: x*np.cos(x), lambda x: x*np.tan(x),
+                     lambda x,y: y*np.sin(x), lambda x,y: y*np.cos(x), lambda x,y: y*np.tan(x)]
+library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y, lambda x, y: x + x + y, lambda x: x + x + x,
+                          lambda x: "sin"+x, lambda x: "cos"+x, lambda x: "tan"+x,
+                          lambda x: x+"sin"+x, lambda x: x+"cos"+x, lambda x: x+"tan"+x,
+                          lambda x,y: y+"sin"+x, lambda x,y: y+"cos"+x, lambda x,y: y+"tan"+x]
 # library_functions = [
 #     lambda x: x,
 #     lambda x: x * x,
@@ -101,24 +109,24 @@ library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y, lamb
 # Scan over the number of integration points and the number of subdomains
 n = 10
 errs = np.zeros((n))
-K_scan = np.linspace(20, 200, n, dtype=int) #ursprünglich: stop = 2000, höhere Werte liefern bessere Ergebnisse
+K_scan = np.linspace(20, 2000, n, dtype=int) #ursprünglich: stop = 2000, höhere Werte liefern bessere Ergebnisse
 for i, K in enumerate(K_scan):
     ode_lib = ps.WeakPDELibrary(
         library_functions=library_functions,
         function_names=library_function_names,
         spatiotemporal_grid=t_train,
         include_bias=True,
-        is_uniform=True,
+        is_uniform=False,
         K=2,
     )
     #opt = ps.STLSQ(threshold=0.05, alpha=1e-5, normalize_columns=True)
 
     opt = ps.SR3(
-        threshold=0.0005, #Standard war 0.05, appearently deutlich bessere Ergebnisse mit geringerem Threshold
+        threshold=0.001, #Standard war 0.05, appearently deutlich bessere Ergebnisse mit geringerem Threshold
         thresholder="l0",
-        max_iter=1000,
+        max_iter=1000000000,
         normalize_columns=True,
-        tol=1e-1,
+        tol=1e-5,
     )
     u_dot_train_integral = ode_lib.convert_u_dot_integral(u_train)
     u_valid_train_integral = ode_lib.convert_u_dot_integral(u_test)
@@ -153,7 +161,7 @@ for i, K in enumerate(K_scan):
     model.print()
 
 #ploting error graph
-if False:
+if True:
     plt.title('Convergence of weak SINDy, hyperparameter scan', fontsize=12)
     plt.plot(K_scan,errs)
     plt.xlabel('Number of subdomains', fontsize=16)
@@ -163,7 +171,7 @@ if False:
 from symbolic_model_to_simulation_2 import simulate_sindy_result_2, simulate_sindy_result_3
 
 #results_sindy_simulation = simulate_sindy_result_2(model.coefficients(), x0, seconds, dt_time_seconds, plot_results = False)
-results_sindy_simulation = simulate_sindy_result_3(model.coefficients(), x0, seconds, dt_time_seconds, False, False)
+results_sindy_simulation = simulate_sindy_result_3(model.coefficients(), x0, seconds, dt_time_seconds, False, True)
 
 # plotting comparison for each variable, without noise:
 #
@@ -244,26 +252,31 @@ list3_inner = u_train.T  # Sample array
 # Define labels for the plots
 labels = ["CSTR (validation data) + noise", "resulting PDE, IC = validation IC ", "CSTR (training data) + noise"]
 
-# Create subplots for 3 graphs (2x2 grid)
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))  # Adjust figsize as needed
+# Create subplots for 4 graphs (2x2 grid) - adjust figsize as needed
+fig, axes = plt.subplots(2, 2, figsize=(10, 8))
 
 # Function to plot data in a subplot
 def plot_data(data_list, subplot, label, alpha=1):  # Add alpha parameter with default 1
   line, = subplot.plot(data_list, label=label, alpha=alpha)  # Unpack line object
   return line  # Return the line object
 
-# Iterate through subplots and plot data from each list
-for i in range(2):
-  for j in range(min(2, len(labels))):
-    if j >= len(labels):
+# Iterate through subplots and plot data from each list (outer loop only once)
+for i in range(2):  # Loop through rows only once
+  for j in range(2):  # Loop through columns
+    if j >= len(labels):  # Check if index exceeds label count (not needed here)
       break
     # Access data for the current subplot
-    current_list1 = list1_inner[i]
-    current_list2 = list2_inner[i]
-    current_list3 = list3_inner[i]
+    if i == 0:
+        current_list1 = list1_inner[j]
+        current_list2 = list2_inner[j]
+        current_list3 = list3_inner[j]
+    if i == 1:
+        current_list1 = list1_inner[j+2]
+        current_list2 = list2_inner[j+2]
+        current_list3 = list3_inner[j+2]
 
     # Plot data in the current subplot (set alpha for list3)
-    line1 = plot_data(current_list1, axes[i, j], labels[0], alpha=0.5), # Use labels[0] for all lines
+    line1 = plot_data(current_list1, axes[i, j], labels[0], alpha=0.5)
     line2 = plot_data(current_list2, axes[i, j], labels[1])
     line3 = plot_data(current_list3, axes[i, j], labels[2], alpha=0.5)  # Set alpha to 0.5 for transparency
 
@@ -277,5 +290,5 @@ plt.show()
 breakbreak = True
 
 #TODO: Spacio Temporal Grid implementieren wie in Doku
-#TODO: Library weiter vergrößern
+#TODO: x * sin, cos, tan, dann lib fertig
 #TODO: Fehler melden (erst Alex fragen): bei library entry x*x*y vergrößert sich model.coefficients() nur um 6, werden also nicht alle Möglichkeiten berücksichtigt
