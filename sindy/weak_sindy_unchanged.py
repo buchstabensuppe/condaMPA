@@ -88,7 +88,7 @@ library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y]
 # Scan over the number of integration points and the number of subdomains
 n = 10
 errs = np.zeros((n))
-K_scan = np.linspace(20, 2000, n, dtype=int) #ursprünglich: stop = 2000, höhere Werte liefern bessere Ergebnisse
+K_scan = np.linspace(20, 200, n, dtype=int) #ursprünglich: stop = 2000, höhere Werte liefern bessere Ergebnisse
 for i, K in enumerate(K_scan):
     ode_lib = ps.WeakPDELibrary(
         library_functions=library_functions,
@@ -131,14 +131,87 @@ for i, K in enumerate(K_scan):
     model.print()
 
 #ploting error graph
-plt.title('Convergence of weak SINDy, hyperparameter scan', fontsize=12)
-plt.plot(K_scan,errs)
-plt.xlabel('Number of subdomains', fontsize=16)
-plt.ylabel('Error', fontsize=16)
-plt.show()
+if False:
+    plt.title('Convergence of weak SINDy, hyperparameter scan', fontsize=12)
+    plt.plot(K_scan,errs)
+    plt.xlabel('Number of subdomains', fontsize=16)
+    plt.ylabel('Error', fontsize=16)
+    plt.show()
 
 from symbolic_model_to_simulation_2 import simulate_sindy_result_2
 
-simulate_sindy_result_2(model.coefficients(), x0, seconds, dt_time_seconds)
+results_sindy_simulation = simulate_sindy_result_2(model.coefficients(), x0, seconds, dt_time_seconds, plot_results = False)
+
+# plotting comparison for each variable, without noise:
+#
+# # Extract inner lists from dictionaries
+# list1_inner = data_raw
+# list2_inner = results_sindy_simulation
+#
+# # Define labels for the plots
+# label1 = "CSTR Model"
+# label2 = "Resulting Sindy PDE"
+#
+# # Create subplots for 4 graphs
+# fig, axes = plt.subplots(2, 2, figsize=(10, 6))  # Adjust figsize as needed
+#
+# # Iterate through each subplot and plot data from separate lists
+# for i in range(2):
+#     for j in range(2):
+#         index = i * 2 + j  # Calculate index for each subplot (0 to 3)
+#
+#         # Plot data from list1 (inner list at index)
+#         axes[i, j].plot(list1_inner[index], label=label1)
+#
+#         # Plot data from list2 (inner list at index)
+#         axes[i, j].plot(list2_inner[index], label=label2)
+#
+#         axes[i, j].set_xlabel("Index")
+#         axes[i, j].set_ylabel("Value")
+#         axes[i, j].set_title(f"Variable {index + 1} Comparison")  # Add subplot title
+#         axes[i, j].legend()
+#
+# # Adjust layout and display the plot
+# plt.tight_layout()
+# plt.show()
+
+# plotting comparison with noise:
+list1_inner = data_raw
+list2_inner = results_sindy_simulation
+list3_inner = u_train.T  # Sample array
+
+# Define labels for the plots
+labels = ["CSTR Model", "PDE calculated with weak sindy", "CSTR Model + noise"]
+
+# Create subplots for 3 graphs (2x2 grid)
+fig, axes = plt.subplots(2, 2, figsize=(10, 8))  # Adjust figsize as needed
+
+# Function to plot data in a subplot
+def plot_data(data_list, subplot, label, alpha=1):  # Add alpha parameter with default 1
+  line, = subplot.plot(data_list, label=label, alpha=alpha)  # Unpack line object
+  return line  # Return the line object
+
+# Iterate through subplots and plot data from each list
+for i in range(2):
+  for j in range(min(2, len(labels))):
+    if j >= len(labels):
+      break
+    # Access data for the current subplot
+    current_list1 = list1_inner[i]
+    current_list2 = list2_inner[i]
+    current_list3 = list3_inner[i]
+
+    # Plot data in the current subplot (set alpha for list3)
+    line1 = plot_data(current_list1, axes[i, j], labels[0])  # Use labels[0] for all lines
+    line2 = plot_data(current_list2, axes[i, j], labels[1])
+    line3 = plot_data(current_list3, axes[i, j], labels[2], alpha=0.5)  # Set alpha to 0.5 for transparency
+
+    # Create a legend for the current subplot with all three labels
+    axes[i, j].legend([line1, line2, line3], labels)  # Provide line objects and labels directly
+
+# Adjust layout and display the plot
+plt.tight_layout()
+plt.show()
+
 
 breakbreak = True

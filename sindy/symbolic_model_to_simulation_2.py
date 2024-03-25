@@ -31,7 +31,7 @@ def ode_as_strings(coeffs):
 
 
     return ode_list_symbolic
-def simulate_sindy_result_2(coeffs, x0_sim, seconds, steps):
+def simulate_sindy_result_2(coeffs, x0_sim, seconds, steps, plot_results):
     ode_list_symbolic = ode_as_strings(coeffs)
     x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14 = sp.symbols("x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14")  # Adjust variable names if needed
 
@@ -63,13 +63,16 @@ def simulate_sindy_result_2(coeffs, x0_sim, seconds, steps):
     cb = sol.y[1, :]
     cc = sol.y[2, :]
     cd = sol.y[3, :]
+    if plot_results:
+        # Plotting the Result
+        fig, ax = plt.subplots()
+        ax.plot(sol.t,ca,sol.t,cb,sol.t,cc,sol.t,cd)
+        ax.set_xlabel('zeit in sekunden und so')
+        ax.set_ylabel('Concentration c in mol/m^3')
+        ax.legend(['H2','CO2','CH4','H2O'])
+        plt.title('automatic plot of sindy result:')
+        plt.show()
 
-    # Plotting the Result
-    fig, ax = plt.subplots()
-    ax.plot(sol.t,ca,sol.t,cb,sol.t,cc,sol.t,cd)
-    ax.set_xlabel('zeit in sekunden und so')
-    ax.set_ylabel('Concentration c in mol/m^3')
-    ax.legend(['H2','CO2','CH4','H2O'])
-    plt.title('automatic plot of sindy result:')
-    plt.show()
+    c = [ca, cb, cc, cd]
+    return c
 
