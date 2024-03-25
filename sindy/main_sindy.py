@@ -26,8 +26,8 @@ if reactor_choice == 2:
     n_variables = 4
     x0 = np.array([0.8, 0.2, 0, 0])
     x0_test = np.array([0.75, 0.3, 0, 0])
-    data_raw = MPI_reactor(seconds, dt_time_seconds, x0)
-    data_raw_test = MPI_reactor(seconds, dt_time_seconds, x0_test)
+    data_raw = MPI_reactor(seconds, dt_time_seconds, x0, True)
+    data_raw_test = MPI_reactor(seconds, dt_time_seconds, x0_test, True)
     x0s = data_raw[0]
     x0s_test = data_raw_test[0]
     data_tmp = np.array(data_raw)
@@ -50,8 +50,8 @@ u_train = data
 u_train_clean = u_train
 # Instantiate and fit the SINDy model with u_dot
 u_dot = ps.FiniteDifference()._differentiate(u_train, t=dt)
-library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y]
-library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y]
+library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y, lambda x: x * x * x]
+library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y, lambda x: x * x * x]
 
 # putting noise on train data:
 rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)

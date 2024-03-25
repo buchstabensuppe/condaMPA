@@ -72,3 +72,5 @@ def simulate_sindy_result(coeffs, x0_sim, seconds, steps):
     plt.title('automatic plot of sindy result:')
     plt.show()
 
+
+

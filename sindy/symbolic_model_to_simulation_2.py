@@ -76,3 +76,106 @@ def simulate_sindy_result_2(coeffs, x0_sim, seconds, steps, plot_results):
     c = [ca, cb, cc, cd]
     return c
 
+def simulate_sindy_result_3(coeffs, x0_sim, seconds, steps, plot_results, e3set):
+    ode_list_symbolic = ode_as_strings(coeffs)
+    x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, x29, x30 = sp.symbols("x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30")  # Adjust variable names if needed
+
+    print(ode_list_symbolic)
+    def ode_system(t, x):
+        # Replace placeholders with the actual symbolic expressions or strings
+        z = 1
+        if e3set:
+            dx1_dt = sp.N(ode_list_symbolic[0].subs({x0: 1, x1: x[0], x2: x[1], x3: x[2], x4: x[3],
+                                                     x5: x[0] * x[0], x6: x[1] * x[1], x7: x[2] * x[2], x8: x[3] * x[3],
+                                                     x9: x[0] * x[1], x10: x[0] * x[2], x11: x[0] * x[3], x12: x[1] * x[2], x13: x[1] * x[3], x14: x[2] * x[3],
+                                                     x15: x[0] * x[0] * x[1], x16: x[0] * x[0] * x[2], x17: x[0] * x[0] * x[3], x18: x[1] * x[1] * x[2], x19: x[1] * x[1] * x[3],
+                                                     x20: x[2] * x[2] * x[3], x21: x[0] * x[0] * x[0], x22: x[1] * x[1] * x[1], x23: x[2] * x[2] * x[2], x24: x[3] * x[3] * x[3]}))
+            dx2_dt = sp.N(ode_list_symbolic[1].subs({x0: 1, x1: x[0], x2: x[1], x3: x[2], x4: x[3],
+                                                     x5: x[0] * x[0], x6: x[1] * x[1], x7: x[2] * x[2], x8: x[3] * x[3],
+                                                     x9: x[0] * x[1], x10: x[0] * x[2], x11: x[0] * x[3], x12: x[1] * x[2], x13: x[1] * x[3], x14: x[2] * x[3],
+                                                     x15: x[0] * x[0] * x[1], x16: x[0] * x[0] * x[2], x17: x[0] * x[0] * x[3], x18: x[1] * x[1] * x[2], x19: x[1] * x[1] * x[3],
+                                                     x20: x[2] * x[2] * x[3], x21: x[0] * x[0] * x[0], x22: x[1] * x[1] * x[1], x23: x[2] * x[2] * x[2], x24: x[3] * x[3] * x[3]}))
+            dx3_dt = sp.N(ode_list_symbolic[2].subs({x0: 1, x1: x[0], x2: x[1], x3: x[2], x4: x[3],
+                                                     x5: x[0] * x[0], x6: x[1] * x[1], x7: x[2] * x[2], x8: x[3] * x[3],
+                                                     x9: x[0] * x[1], x10: x[0] * x[2], x11: x[0] * x[3], x12: x[1] * x[2], x13: x[1] * x[3], x14: x[2] * x[3],
+                                                     x15: x[0] * x[0] * x[1], x16: x[0] * x[0] * x[2], x17: x[0] * x[0] * x[3], x18: x[1] * x[1] * x[2], x19: x[1] * x[1] * x[3],
+                                                     x20: x[2] * x[2] * x[3], x21: x[0] * x[0] * x[0], x22: x[1] * x[1] * x[1], x23: x[2] * x[2] * x[2], x24: x[3] * x[3] * x[3]}))
+            dx4_dt = sp.N(ode_list_symbolic[3].subs({x0: 1, x1: x[0], x2: x[1], x3: x[2], x4: x[3],
+                                                     x5: x[0] * x[0], x6: x[1] * x[1], x7: x[2] * x[2], x8: x[3] * x[3],
+                                                     x9: x[0] * x[1], x10: x[0] * x[2], x11: x[0] * x[3], x12: x[1] * x[2], x13: x[1] * x[3], x14: x[2] * x[3],
+                                                     x15: x[0] * x[0] * x[1], x16: x[0] * x[0] * x[2], x17: x[0] * x[0] * x[3], x18: x[1] * x[1] * x[2], x19: x[1] * x[1] * x[3],
+                                                     x20: x[2] * x[2] * x[3], x21: x[0] * x[0] * x[0], x22: x[1] * x[1] * x[1], x23: x[2] * x[2] * x[2], x24: x[3] * x[3] * x[3]}))
+            dcdz = np.array([dx1_dt, dx2_dt, dx3_dt, dx4_dt])
+        else:
+            dx1_dt = sp.N(ode_list_symbolic[0].subs({x0: 1, x1: x[0], x2: x[1], x3: x[2], x4: x[3],
+                                                     x5: x[0] * x[0], x6: x[1] * x[1], x7: x[2] * x[2], x8: x[3] * x[3],
+                                                     x9: x[0] * x[1], x10: x[0] * x[2], x11: x[0] * x[3],
+                                                     x12: x[1] * x[2], x13: x[1] * x[3], x14: x[2] * x[3],
+                                                     x15: x[0] * x[0] * x[1], x16: x[0] * x[0] * x[2],
+                                                     x17: x[0] * x[0] * x[3], x18: x[1] * x[1] * x[2],
+                                                     x19: x[1] * x[1] * x[3],
+                                                     x20: x[2] * x[2] * x[3], x21: x[0] * x[0] * x[0],
+                                                     x22: x[1] * x[1] * x[1], x23: x[2] * x[2] * x[2],
+                                                     x24: x[3] * x[3] * x[3]}))
+            dx2_dt = sp.N(ode_list_symbolic[1].subs({x0: 1, x1: x[0], x2: x[1], x3: x[2], x4: x[3],
+                                                     x5: x[0] * x[0], x6: x[1] * x[1], x7: x[2] * x[2], x8: x[3] * x[3],
+                                                     x9: x[0] * x[1], x10: x[0] * x[2], x11: x[0] * x[3],
+                                                     x12: x[1] * x[2], x13: x[1] * x[3], x14: x[2] * x[3],
+                                                     x15: x[0] * x[0] * x[1], x16: x[0] * x[0] * x[2],
+                                                     x17: x[0] * x[0] * x[3], x18: x[1] * x[1] * x[2],
+                                                     x19: x[1] * x[1] * x[3],
+                                                     x20: x[2] * x[2] * x[3], x21: x[0] * x[0] * x[0],
+                                                     x22: x[1] * x[1] * x[1], x23: x[2] * x[2] * x[2],
+                                                     x24: x[3] * x[3] * x[3]}))
+            dx3_dt = sp.N(ode_list_symbolic[2].subs({x0: 1, x1: x[0], x2: x[1], x3: x[2], x4: x[3],
+                                                     x5: x[0] * x[0], x6: x[1] * x[1], x7: x[2] * x[2], x8: x[3] * x[3],
+                                                     x9: x[0] * x[1], x10: x[0] * x[2], x11: x[0] * x[3],
+                                                     x12: x[1] * x[2], x13: x[1] * x[3], x14: x[2] * x[3],
+                                                     x15: x[0] * x[0] * x[1], x16: x[0] * x[0] * x[2],
+                                                     x17: x[0] * x[0] * x[3], x18: x[1] * x[1] * x[2],
+                                                     x19: x[1] * x[1] * x[3],
+                                                     x20: x[2] * x[2] * x[3], x21: x[0] * x[0] * x[0],
+                                                     x22: x[1] * x[1] * x[1], x23: x[2] * x[2] * x[2],
+                                                     x24: x[3] * x[3] * x[3]}))
+            dx4_dt = sp.N(ode_list_symbolic[3].subs({x0: 1, x1: x[0], x2: x[1], x3: x[2], x4: x[3],
+                                                     x5: x[0] * x[0], x6: x[1] * x[1], x7: x[2] * x[2], x8: x[3] * x[3],
+                                                     x9: x[0] * x[1], x10: x[0] * x[2], x11: x[0] * x[3],
+                                                     x12: x[1] * x[2], x13: x[1] * x[3], x14: x[2] * x[3],
+                                                     x15: x[0] * x[0] * x[1], x16: x[0] * x[0] * x[2],
+                                                     x17: x[0] * x[0] * x[3], x18: x[1] * x[1] * x[2],
+                                                     x19: x[1] * x[1] * x[3],
+                                                     x20: x[2] * x[2] * x[3], x21: x[0] * x[0] * x[0],
+                                                     x22: x[1] * x[1] * x[1], x23: x[2] * x[2] * x[2],
+                                                     x24: x[3] * x[3] * x[3]}))
+            dcdz = np.array([dx1_dt, dx2_dt, dx3_dt, dx4_dt])
+        return dcdz
+
+    c_in  =  x0_sim * data['p_R'] / (data['R'] * data['T_gas_in'])
+
+    zspan = (0, seconds)
+
+    # Define lambda-function
+    func = lambda t, c: ode_system(t, c)
+
+    # Solving the ODE-System for Initial Conditions
+    # sol = integrate.solve_ivp(func, zspan, p['cin'], method='RK45')#,t_eval=np.linspace(0, data['L_R'], 10))
+    sol = integrate.solve_ivp(func, zspan, c_in, method='RK45', t_eval=np.linspace(0, seconds, steps))
+
+    # Unpacking the Trajectories of the Concentrations
+    ca = sol.y[0, :]
+    cb = sol.y[1, :]
+    cc = sol.y[2, :]
+    cd = sol.y[3, :]
+    if plot_results:
+        # Plotting the Result
+        fig, ax = plt.subplots()
+        ax.plot(sol.t,ca,sol.t,cb,sol.t,cc,sol.t,cd)
+        ax.set_xlabel('zeit in sekunden und so')
+        ax.set_ylabel('Concentration c in mol/m^3')
+        ax.legend(['H2','CO2','CH4','H2O'])
+        plt.title('automatic plot of sindy result:')
+        plt.show()
+
+    c = [ca, cb, cc, cd]
+    return c
+

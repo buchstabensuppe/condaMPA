@@ -14,7 +14,7 @@ from MPIR_callable_function import MPI_reactor
 import pysindy as ps
 
 # generating data:
-seconds = 1 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
+seconds = 2 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
 dt = 0.001 #[s]
 dt_time_seconds = int(seconds/dt)
 filter = False
@@ -33,7 +33,7 @@ if reactor_choice == 2:
     x0 = np.array([0.8, 0.2, 0, 0])
     x0_test = np.array([0.6, 0.15, 0, 0])
     data_raw = MPI_reactor(seconds, dt_time_seconds, x0, dont_plot = True)
-    data_raw_test = MPI_reactor(seconds, dt_time_seconds, x0, dont_plot = True)
+    data_raw_test = MPI_reactor(seconds, dt_time_seconds, x0_test, dont_plot = True)
     x0s = data_raw[0]
     x0s_test = data_raw_test[0]
     data_tmp = np.array(data_raw)
@@ -82,9 +82,22 @@ if filter == True:
     u_test = u_test_filtered
 
 # Same library terms as before
-library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y]
-library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y]
 
+#library set with x^3:
+library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y, lambda x, y: x * x *y, lambda x: x * x * x,
+                     ]#lambda x: np.sin(x)]
+library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y, lambda x, y: x + x + y, lambda x: x + x + x,
+                          ]#lambda x: "sin"+x]
+# library_functions = [
+#     lambda x: x,
+#     lambda x: x * x,
+#     lambda x, y: x * y
+# ]
+# library_function_names = [
+#     lambda x: x,
+#     lambda x: x * x,
+#     lambda x, y: x * y
+# ]
 # Scan over the number of integration points and the number of subdomains
 n = 10
 errs = np.zeros((n))
@@ -98,8 +111,10 @@ for i, K in enumerate(K_scan):
         is_uniform=True,
         K=2,
     )
+    #opt = ps.STLSQ(threshold=0.05, alpha=1e-5, normalize_columns=True)
+
     opt = ps.SR3(
-        threshold=0.000000001, #Standard war 0.05, appearently deutlich bessere Ergebnisse mit geringerem Threshold
+        threshold=0.0005, #Standard war 0.05, appearently deutlich bessere Ergebnisse mit geringerem Threshold
         thresholder="l0",
         max_iter=1000,
         normalize_columns=True,
@@ -111,8 +126,15 @@ for i, K in enumerate(K_scan):
     # Instantiate and fit the SINDy model with the integral of u_dot
     model = ps.SINDy(feature_library=ode_lib, optimizer=opt)
     model.fit(u_train, quiet=True)
-    validate_with_test_data = False
-    if validate_with_test_data == True:
+    validate_with_test_data = True
+    errs[i] = np.sqrt(
+        (
+                np.sum((u_dot_train_integral - opt.Theta_ @ opt.coef_.T) ** 2)
+                / np.sum(u_dot_train_integral ** 2)
+        )
+        / u_dot_train_integral.shape[0]
+    )
+    if validate_with_test_data == False:
         errs[i] = np.sqrt(
             (
                 np.sum((u_valid_train_integral - opt.Theta_ @ opt.coef_.T) ** 2)
@@ -138,9 +160,10 @@ if False:
     plt.ylabel('Error', fontsize=16)
     plt.show()
 
-from symbolic_model_to_simulation_2 import simulate_sindy_result_2
+from symbolic_model_to_simulation_2 import simulate_sindy_result_2, simulate_sindy_result_3
 
-results_sindy_simulation = simulate_sindy_result_2(model.coefficients(), x0, seconds, dt_time_seconds, plot_results = False)
+#results_sindy_simulation = simulate_sindy_result_2(model.coefficients(), x0, seconds, dt_time_seconds, plot_results = False)
+results_sindy_simulation = simulate_sindy_result_3(model.coefficients(), x0, seconds, dt_time_seconds, False, False)
 
 # plotting comparison for each variable, without noise:
 #
@@ -176,42 +199,42 @@ results_sindy_simulation = simulate_sindy_result_2(model.coefficients(), x0, sec
 # plt.show()
 
 # plotting comparison with noise:
-list1_inner = data_raw
-list2_inner = results_sindy_simulation
-list3_inner = u_train.T  # Sample array
-
-# Define labels for the plots
-labels = ["CSTR Model", "PDE calculated with weak sindy", "CSTR Model + noise"]
-
-# Create subplots for 3 graphs (2x2 grid)
-fig, axes = plt.subplots(2, 2, figsize=(10, 8))  # Adjust figsize as needed
-
-# Function to plot data in a subplot
-def plot_data(data_list, subplot, label, alpha=1):  # Add alpha parameter with default 1
-  line, = subplot.plot(data_list, label=label, alpha=alpha)  # Unpack line object
-  return line  # Return the line object
-
-# Iterate through subplots and plot data from each list
-for i in range(2):
-  for j in range(min(2, len(labels))):
-    if j >= len(labels):
-      break
-    # Access data for the current subplot
-    current_list1 = list1_inner[i]
-    current_list2 = list2_inner[i]
-    current_list3 = list3_inner[i]
-
-    # Plot data in the current subplot (set alpha for list3)
-    line1 = plot_data(current_list1, axes[i, j], labels[0])  # Use labels[0] for all lines
-    line2 = plot_data(current_list2, axes[i, j], labels[1])
-    line3 = plot_data(current_list3, axes[i, j], labels[2], alpha=0.5)  # Set alpha to 0.5 for transparency
-
-    # Create a legend for the current subplot with all three labels
-    axes[i, j].legend([line1, line2, line3], labels)  # Provide line objects and labels directly
-
-# Adjust layout and display the plot
-plt.tight_layout()
-plt.show()
+#list1_inner = data_raw
+# list2_inner = results_sindy_simulation
+# list3_inner = u_train.T  # Sample array
+#
+# # Define labels for the plots
+# labels = ["CSTR Model", "PDE calculated with weak sindy", "CSTR Model + noise"]
+#
+# # Create subplots for 3 graphs (2x2 grid)
+# fig, axes = plt.subplots(2, 2, figsize=(10, 8))  # Adjust figsize as needed
+#
+# # Function to plot data in a subplot
+# def plot_data(data_list, subplot, label, alpha=1):  # Add alpha parameter with default 1
+#   line, = subplot.plot(data_list, label=label, alpha=alpha)  # Unpack line object
+#   return line  # Return the line object
+#
+# # Iterate through subplots and plot data from each list
+# for i in range(2):
+#   for j in range(min(2, len(labels))):
+#     if j >= len(labels):
+#       break
+#     # Access data for the current subplot
+#     current_list1 = list1_inner[i]
+#     current_list2 = list2_inner[i]
+#     current_list3 = list3_inner[i]
+#
+#     # Plot data in the current subplot (set alpha for list3)
+#     line1 = plot_data(current_list1, axes[i, j], labels[0])  # Use labels[0] for all lines
+#     line2 = plot_data(current_list2, axes[i, j], labels[1])
+#     line3 = plot_data(current_list3, axes[i, j], labels[2], alpha=0.5)  # Set alpha to 0.5 for transparency
+#
+#     # Create a legend for the current subplot with all three labels
+#     axes[i, j].legend([line1, line2, line3], labels)  # Provide line objects and labels directly
+#
+# # Adjust layout and display the plot
+# plt.tight_layout()
+# plt.show()
 
 # plotting comparison with noise, including test set
 list1_inner = u_test.T
@@ -219,7 +242,7 @@ list2_inner = results_sindy_simulation
 list3_inner = u_train.T  # Sample array
 
 # Define labels for the plots
-labels = ["CSTR Simulation (validation data) + noise", "PDE calculated with weak sindy", "CSTR Model (training data) + noise"]
+labels = ["CSTR (validation data) + noise", "resulting PDE, IC = validation IC ", "CSTR (training data) + noise"]
 
 # Create subplots for 3 graphs (2x2 grid)
 fig, axes = plt.subplots(2, 2, figsize=(10, 8))  # Adjust figsize as needed
@@ -250,4 +273,9 @@ for i in range(2):
 # Adjust layout and display the plot
 plt.tight_layout()
 plt.show()
+
 breakbreak = True
+
+#TODO: Spacio Temporal Grid implementieren wie in Doku
+#TODO: Library weiter vergrößern
+#TODO: Fehler melden (erst Alex fragen): bei library entry x*x*y vergrößert sich model.coefficients() nur um 6, werden also nicht alle Möglichkeiten berücksichtigt
