@@ -33,7 +33,7 @@ if reactor_choice == 2:
     x0 = np.array([0.8, 0.2, 0, 0])
     x0_test = np.array([0.6, 0.15, 0, 0])
     data_raw = MPI_reactor(seconds, dt_time_seconds, x0, dont_plot = True)
-    data_raw_test = MPI_reactor(seconds, dt_time_seconds, x0_test, dont_plot = True)
+    data_raw_test = MPI_reactor(seconds, dt_time_seconds, x0, dont_plot = True)
     x0s = data_raw[0]
     x0s_test = data_raw_test[0]
     data_tmp = np.array(data_raw)
@@ -99,7 +99,7 @@ for i, K in enumerate(K_scan):
         K=2,
     )
     opt = ps.SR3(
-        threshold=0.0001, #Standard war 0.05, appearently deutlich bessere Ergebnisse mit geringerem Threshold
+        threshold=0.000000001, #Standard war 0.05, appearently deutlich bessere Ergebnisse mit geringerem Threshold
         thresholder="l0",
         max_iter=1000,
         normalize_columns=True,
@@ -213,5 +213,41 @@ for i in range(2):
 plt.tight_layout()
 plt.show()
 
+# plotting comparison with noise, including test set
+list1_inner = u_test.T
+list2_inner = results_sindy_simulation
+list3_inner = u_train.T  # Sample array
 
+# Define labels for the plots
+labels = ["CSTR Simulation (validation data) + noise", "PDE calculated with weak sindy", "CSTR Model (training data) + noise"]
+
+# Create subplots for 3 graphs (2x2 grid)
+fig, axes = plt.subplots(2, 2, figsize=(10, 8))  # Adjust figsize as needed
+
+# Function to plot data in a subplot
+def plot_data(data_list, subplot, label, alpha=1):  # Add alpha parameter with default 1
+  line, = subplot.plot(data_list, label=label, alpha=alpha)  # Unpack line object
+  return line  # Return the line object
+
+# Iterate through subplots and plot data from each list
+for i in range(2):
+  for j in range(min(2, len(labels))):
+    if j >= len(labels):
+      break
+    # Access data for the current subplot
+    current_list1 = list1_inner[i]
+    current_list2 = list2_inner[i]
+    current_list3 = list3_inner[i]
+
+    # Plot data in the current subplot (set alpha for list3)
+    line1 = plot_data(current_list1, axes[i, j], labels[0], alpha=0.5), # Use labels[0] for all lines
+    line2 = plot_data(current_list2, axes[i, j], labels[1])
+    line3 = plot_data(current_list3, axes[i, j], labels[2], alpha=0.5)  # Set alpha to 0.5 for transparency
+
+    # Create a legend for the current subplot with all three labels
+    axes[i, j].legend([line1, line2, line3], labels)  # Provide line objects and labels directly
+
+# Adjust layout and display the plot
+plt.tight_layout()
+plt.show()
 breakbreak = True
