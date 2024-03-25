@@ -8,6 +8,7 @@ from scipy.io import loadmat
 from sklearn.metrics import mean_squared_error
 from pysindy.utils.odes import lorenz
 import CSTR1
+from averaging_measurements_for_noise_reduction import average_noisy_measurement
 from CSTR1 import simCSTR1
 from MPIR_callable_function import MPI_reactor
 import pysindy as ps
@@ -16,14 +17,16 @@ import pysindy as ps
 seconds = 1 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
 dt = 0.001 #[s]
 dt_time_seconds = int(seconds/dt)
+filter = False
 
-# Simulation auswählen: basic batch reactor = 1, MPI CSTR = 2
+# Simulation auswählen: basic batch reactor = 1, MPI CSTR = 2, 3 = MPI CSTR but average of multiple measurements
 reactor_choice = 2
 if reactor_choice == 1:
     n_variables = 3
     x0s = [100, 50, 10]
     x0 = x0s
     data = simCSTR1(seconds, dt, n_variables, x0s)
+    u_train = data
 
 if reactor_choice == 2:
     n_variables = 4
@@ -40,21 +43,43 @@ if reactor_choice == 2:
     for i in range(dt_time_seconds):
         data[i] = [data_tmp[0, i], data_tmp[1, i], data_tmp[2, i], data_tmp[3, i]]
         data_test[i] = [data_tmp_test[0, i], data_tmp_test[1, i], data_tmp_test[2, i], data_tmp_test[3, i]]
+    u_train = data
+    u_test = data_test
 
+if reactor_choice == 3:
+    average_of_n = 100
+    n_variables = 4
+    x0 = np.array([0.8, 0.2, 0, 0])
+    x0_test = np.array([0.6, 0.15, 0, 0])
+    u_dot_clean, u_clean, u_train, u_test, u_dot = average_noisy_measurement(average_of_n, seconds, dt_time_seconds, x0)
 
 t_train = np.arange(0, seconds, dt)
 t_train_span = (t_train[0], t_train[-1])
-u_train = data
-u_test = data_test
+
 
 # applying noise
-rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
-u_dot_clean = ps.FiniteDifference()._differentiate(u_test, t=dt)
-u_clean = u_test
-u_train = u_train + np.random.normal(0, rmse / 80.0, u_train.shape)  # Add 20% noise
-rmse = mean_squared_error(u_test, np.zeros(u_test.shape), squared=False)
-u_test = u_test + np.random.normal(0, rmse / 80.0, u_test.shape)  # Add 20% noise
-u_dot = ps.FiniteDifference()._differentiate(u_test, t=dt)
+if reactor_choice != 3:
+    rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
+    u_dot_clean = ps.FiniteDifference()._differentiate(u_test, t=dt)
+    u_clean = u_test
+    u_train = u_train + np.random.normal(0, rmse / 80.0, u_train.shape)  # Add 20% noise
+    rmse = mean_squared_error(u_test, np.zeros(u_test.shape), squared=False)
+    u_test = u_test + np.random.normal(0, rmse / 80.0, u_test.shape)  # Add 20% noise
+    u_dot = ps.FiniteDifference()._differentiate(u_test, t=dt)
+
+# setting negative values to zero: a *= (a>0)
+u_train *= (u_train > 0)
+u_test *= (u_test > 0)
+u_dot *= (u_dot > 0)
+
+# applying noise filters:
+if filter == True:
+    from scipy.signal import medfilt
+    # Example usage
+    u_train_filtered = medfilt(u_train, kernel_size=5)
+    u_test_filtered = medfilt(u_test, kernel_size=5)
+    u_train = u_train_filtered
+    u_test = u_test_filtered
 
 # Same library terms as before
 library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y]
@@ -63,7 +88,7 @@ library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y]
 # Scan over the number of integration points and the number of subdomains
 n = 10
 errs = np.zeros((n))
-K_scan = np.linspace(20, 2000, n, dtype=int)
+K_scan = np.linspace(20, 2000, n, dtype=int) #ursprünglich: stop = 2000, höhere Werte liefern bessere Ergebnisse
 for i, K in enumerate(K_scan):
     ode_lib = ps.WeakPDELibrary(
         library_functions=library_functions,
@@ -74,7 +99,7 @@ for i, K in enumerate(K_scan):
         K=2,
     )
     opt = ps.SR3(
-        threshold=0.05,
+        threshold=0.0001, #Standard war 0.05, appearently deutlich bessere Ergebnisse mit geringerem Threshold
         thresholder="l0",
         max_iter=1000,
         normalize_columns=True,
@@ -115,3 +140,5 @@ plt.show()
 from symbolic_model_to_simulation_2 import simulate_sindy_result_2
 
 simulate_sindy_result_2(model.coefficients(), x0, seconds, dt_time_seconds)
+
+breakbreak = True
