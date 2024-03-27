@@ -100,11 +100,13 @@ library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y]
 
 # hyperparameter tuning settings:
 
-thresholder_iterated = 0.00005
-thresholder_variation = 0.0001
+thresholder_iterated = 0.00001
+thresholder_variation = 0.00001
 results = np.ones((100,2))
 n_iterations = 1000
 simulation_timeout = 60  # (s)
+mse_tracker = 0
+mse_tracker_steps = 0
 results_mse = []
 results_thresholder = []
 # managing timeout for simulation of results:
@@ -126,7 +128,9 @@ def loop(n):
         print("sec {}".format(sec))
         time.sleep(1)
 
-
+x_train_multi = []
+x_train_multi.append(u_train)
+x_train_multi.append(u_test)
 for ji in range(n_iterations):
     thresholder_iterated += thresholder_variation
     # Scan over the number of integration points and the number of subdomains
@@ -149,31 +153,31 @@ for ji in range(n_iterations):
             thresholder="l1",
             max_iter=10000000000,
             normalize_columns=True,
-            tol=1e-1,
+            tol=1e-4,
         )
         u_dot_train_integral = pde_lib.convert_u_dot_integral(u_train)
         u_valid_train_integral = pde_lib.convert_u_dot_integral(u_test)
 
         # Instantiate and fit the SINDy model with the integral of u_dot
         model = ps.SINDy(feature_library=pde_lib, optimizer=opt)
-        model.fit(u_train, quiet=True)
+        model.fit(x_train_multi, quiet=True, multiple_trajectories=True)
         validate_with_test_data = False
-        if validate_with_test_data == False:
-            errs[i] = np.sqrt(
-                (
-                    np.sum((u_valid_train_integral - opt.Theta_ @ opt.coef_.T) ** 2)
-                    / np.sum(u_valid_train_integral ** 2)
-                )
-                / u_valid_train_integral.shape[0]
-            )
-        else:
-            errs[i] = np.sqrt(
-                (
-                    np.sum((u_dot_train_integral - opt.Theta_ @ opt.coef_.T) ** 2)
-                    / np.sum(u_dot_train_integral ** 2)
-                )
-                / u_dot_train_integral.shape[0]
-            )
+        # if validate_with_test_data == False:
+        #     errs[i] = np.sqrt(
+        #         (
+        #             np.sum((u_valid_train_integral - opt.Theta_ @ opt.coef_.T) ** 2)
+        #             / np.sum(u_valid_train_integral ** 2)
+        #         )
+        #         / u_valid_train_integral.shape[0]
+        #     )
+        # else:
+        #     errs[i] = np.sqrt(
+        #         (
+        #             np.sum((u_dot_train_integral - opt.Theta_ @ opt.coef_.T) ** 2)
+        #             / np.sum(u_dot_train_integral ** 2)
+        #         )
+        #         / u_dot_train_integral.shape[0]
+        #     )
         model.print()
 
     #ploting error graph
@@ -343,9 +347,17 @@ for ji in range(n_iterations):
         mse_2 = np.mean(squared_differences_2)
         print('mse:', mse)
         print('mse_2:', mse_2)
+
+        mse_tracker_steps += 1
+        mse_tracker += mse
+        if mse_tracker_steps == 10:
+            print(mse_tracker/10)
+            mse_tracker = 0
+            mse_tracker_steps = 0
         if mse == 'inf':
             mse = 999
-        if mse < 0.9:
+        if mse < 1 and mse_2 < 1:
+
             # plotting comparison with noise, including test set
             list1_inner = u_test.T
             list2_inner = results_sindy_simulation
