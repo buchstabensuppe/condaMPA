@@ -164,7 +164,7 @@ def MPI_reactor(seconds, steps, x0, dont_plot):
         # dccdt = (1 / tau)(c_in[2] - cc) + p['nu_c'] * p['rho'] * r
         # dcddt = (1 / tau)(c_in[3] - cd) + p['nu_d'] * p['rho'] * r
         # soll nu ein ny sein?
-        ny = np.array([-4, -1, 2, 2])
+        ny = np.array([-4, -1, 1, 2])
 
         # print('tau:', tau)
         # print('c_in(0)', c_in[0])
