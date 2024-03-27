@@ -14,7 +14,7 @@ from MPIR_callable_function import MPI_reactor
 import pysindy as ps
 
 # generating data:
-seconds = 5 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
+seconds = 2 #[s]  <- WARNING if you change these numbers, also num at t=np.linspace has to be changed
 dt = 0.002 #[s]
 dt_time_seconds = int(seconds/dt)
 filter = False
@@ -58,19 +58,19 @@ t_train_span = (t_train[0], t_train[-1])
 
 
 # applying noise
-# if reactor_choice != 3:
-#     rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
-#     u_dot_clean = ps.FiniteDifference()._differentiate(u_test, t=dt)
-#     u_clean = u_test
-#     u_train = u_train + np.random.normal(0, rmse / 160.0, u_train.shape)  # Add 20% noise
-#     rmse = mean_squared_error(u_test, np.zeros(u_test.shape), squared=False)
-#     u_test = u_test + np.random.normal(0, rmse / 160.0, u_test.shape)  # Add 20% noise
-#     u_dot = ps.FiniteDifference()._differentiate(u_test, t=dt)
-#
-# # setting negative values to zero: a *= (a>0)
-# u_train *= (u_train > 0)
-# u_test *= (u_test > 0)
-# u_dot *= (u_dot > 0)
+if reactor_choice != 3:
+    rmse = mean_squared_error(u_train, np.zeros((u_train).shape), squared=False)
+    u_dot_clean = ps.FiniteDifference()._differentiate(u_test, t=dt)
+    u_clean = u_test
+    u_train = u_train + np.random.normal(0, rmse / 160.0, u_train.shape)  # Add 20% noise
+    rmse = mean_squared_error(u_test, np.zeros(u_test.shape), squared=False)
+    u_test = u_test + np.random.normal(0, rmse / 160.0, u_test.shape)  # Add 20% noise
+    u_dot = ps.FiniteDifference()._differentiate(u_test, t=dt)
+
+# setting negative values to zero: a *= (a>0)
+u_train *= (u_train > 0)
+u_test *= (u_test > 0)
+u_dot *= (u_dot > 0)
 
 # applying noise filters: (none of which are working <sad pepe face>)
 if filter == True:
@@ -81,9 +81,12 @@ if filter == True:
     u_train = u_train_filtered
     u_test = u_test_filtered
 
+library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y]
+library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y]
+
 #library set ending without sin cos tan
-library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y, lambda x, y: x * x *y, lambda x: x * x * x]
-library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y, lambda x, y: x + x + y, lambda x: x + x + x]
+# library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y, lambda x, y: x * x *y, lambda x: x * x * x]
+# library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y, lambda x, y: x + x + y, lambda x: x + x + x]
 
 # library set ending with xtanx
 # library_functions = [lambda x: x, lambda x: x * x, lambda x, y: x * y, lambda x, y: x * x *y, lambda x: x * x * x,
@@ -97,11 +100,11 @@ library_function_names = [lambda x: x, lambda x: x + x, lambda x, y: x + y, lamb
 
 # hyperparameter tuning settings:
 
-thresholder_iterated = 0.0035
+thresholder_iterated = 0.00005
 thresholder_variation = 0.0001
 results = np.ones((100,2))
 n_iterations = 1000
-simulation_timeout = 30  # (s)
+simulation_timeout = 60  # (s)
 results_mse = []
 results_thresholder = []
 # managing timeout for simulation of results:
@@ -143,10 +146,10 @@ for ji in range(n_iterations):
 
         opt = ps.SR3(
             threshold=thresholder_iterated,  #Standard war 0.05, appearently deutlich bessere Ergebnisse mit geringerem Threshold
-            thresholder="l0",
-            max_iter=1000,
+            thresholder="l1",
+            max_iter=10000000000,
             normalize_columns=True,
-            tol=1e-5,
+            tol=1e-1,
         )
         u_dot_train_integral = pde_lib.convert_u_dot_integral(u_train)
         u_valid_train_integral = pde_lib.convert_u_dot_integral(u_test)
@@ -319,21 +322,30 @@ for ji in range(n_iterations):
         # Assuming u_train.T has shape (4, 2500) and results_sindy_simulation has shape (4, 860)
         shorter_list = results_sindy_simulation
         longer_list = u_train.T
+        shorter_list_2 = results_sindy_simulation_test_set
+        longer_list_2 = u_test.T
+
 
         # Use the minimum length of the lists to slice the longer list
         common_length = min(len(shorter_list[0]), len(longer_list[0]))
         sliced_longer_list = longer_list[:, :common_length]
 
+        common_length_2 = min(len(shorter_list_2[0]), len(longer_list_2[0]))
+        sliced_longer_list_2 = longer_list_2[:, :common_length_2]
+
         # Now you can safely subtract
         squared_differences = np.square(np.subtract(sliced_longer_list, shorter_list))
+        squared_differences_2 = np.square(np.subtract(sliced_longer_list_2, shorter_list_2))
 
         # # Calculate the mean squared error (MSE)
         # squared_differences = np.square(np.subtract(u_train.T, results_sindy_simulation))
         mse = np.mean(squared_differences)
+        mse_2 = np.mean(squared_differences_2)
         print('mse:', mse)
+        print('mse_2:', mse_2)
         if mse == 'inf':
             mse = 999
-        if mse < 0.1:
+        if mse < 0.9:
             # plotting comparison with noise, including test set
             list1_inner = u_test.T
             list2_inner = results_sindy_simulation
